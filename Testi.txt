@@ -279,3 +279,7 @@ Vesa sit tekee joka maanantai meille hampurilaisia.
 
 																																																																																																																																																																																																																																																																																																																										Kukkuuu :D:D:D:D
 
+<<<<<<< HEAD
+=======
+Olipa kerran pieni pahA NOITA IIRO NIMELTÄÄM, vai oliko?
+>>>>>>> e3c269e736124c098322d39575276fb4b3278c87
