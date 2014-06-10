@@ -103,37 +103,41 @@ void client()
 	Hand.push_back(a);
 	Hand.push_back(a);
 
-	gameOver = false;
-while(gameOver = false)
-{
-	// odotetaan viestiä onko MAAILMANLOPPU TULLUT
-	// odotetaan viestiä onko minu vuoro
-
-	int message = 2; // eli kenen vuoro, väliaikasesti 2;
-	if (message == pNumber)
-	{
-		std::cout << "===========================" << std::endl;
-		std::cout << "Valitse poistettava kortti" << std::endl;
-		for (int i = 0; i < Hand.size(); i++)
+	bool gameOver = false;
+	while(gameOver = false)
 		{
-			std::cout << i <<"="<< Hand[i].suit << std::endl;
+
+			// odotetaan viestiä onko MAAILMANLOPPU TULLUT gameOver = true;
+			// odotetaan viestiä onko minu vuoro
+
+		int message = 2; // eli kenen vuoro, väliaikasesti 2;
+		if (message == pNumber)
+		{
+			std::cout << "===========================" << std::endl;
+			std::cout << "Valitse poistettava kortti" << std::endl;
+			for (int i = 0; i < Hand.size(); i++)
+			{
+				std::cout << i <<"="<< Hand[i].suit << std::endl;
+			}
+			std::cout << "===========================" << std::endl;
+			int selection;
+			std::cin >> selection;
+			currentCard = Hand[selection].value;
+			Hand.erase(Hand.begin()+selection);
+
 		}
-		std::cout << "===========================" << std::endl;
-		int selection;
-		std::cin >> selection;
-		currentCard = Hand[selection].value;
-		Hand.erase(Hand.begin()+selection);
+		else
+		{
+			//odotellaan hostila korttia jonka toinen pelaaja on pelannut
+			//currentCard = hostilta tullu kortti
+	
+		}
 		if ( topCard < currentCard)
 			topCard = currentCard;
-	}
-	else
-	{
-		//odotellaan hostila korttia jonka toinen pelaaja on pelannut
-		//currentCard = hostilta tullu kortti
-		if (topCard < currentCard)
-			topCard = currentCard;
-	}
 
+		std::cout << "Current top card: "<< topCard << "Current card: " << currentCard << std::endl;
+
+		}
 }
 int main()
 {
