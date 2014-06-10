@@ -1,9 +1,10 @@
 #include "Player.h"
 
 
-Player::Player(int n)
+Player::Player(int n, std::string na)
 {
 	playerNumber = n;
+	name = na;
 }
 
 Player::~Player(void)

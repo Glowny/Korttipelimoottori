@@ -3,6 +3,7 @@
 #include <SFML/Network.hpp>
 #include "Kortti.h"
 #include "Player.h"
+#include "Draw.h"
 #include <string>
 #include <algorithm>
 #include <ctime>
@@ -77,6 +78,8 @@ void host()
 }
 void client()
 {
+
+	
 	std::string name;
 	std::cout << "giv neim, pls"<<std::endl;
 	std::cin >> name;
@@ -104,8 +107,20 @@ void client()
 	Hand.push_back(a);
 
 	bool gameOver = false;
-	while(gameOver = false)
+	sf::RenderWindow clientWindow(sf::VideoMode(900,1000), "Master of card games");
+
+	while(clientWindow.isOpen() && gameOver == false)
+	{
+		sf::Event event;
+		while (clientWindow.pollEvent(event))
 		{
+			if (event.type == sf::Event::Closed)
+				clientWindow.close();
+		}
+		clientWindow.clear(sf::Color::Magenta);
+
+	Draw drawSys(&Hand, &clientWindow);
+
 
 			// odotetaan viestiä onko MAAILMANLOPPU TULLUT gameOver = true;
 			// odotetaan viestiä onko minu vuoro
@@ -117,7 +132,7 @@ void client()
 			std::cout << "Valitse poistettava kortti" << std::endl;
 			for (int i = 0; i < Hand.size(); i++)
 			{
-				std::cout << i <<"="<< Hand[i].suit << std::endl;
+				std::cout << i <<"="<< Hand[i].value << std::endl;
 			}
 			std::cout << "===========================" << std::endl;
 			int selection;
@@ -137,7 +152,10 @@ void client()
 
 		std::cout << "Current top card: "<< topCard << "Current card: " << currentCard << std::endl;
 
+		drawSys.drawLoop();
+		clientWindow.display();
 		}
+
 }
 int main()
 {
