@@ -40,7 +40,7 @@ std::vector<Card> Dealer::deal(int i)
 	std::vector<Card> hand;
 	for(int j = 0; j < i; j++)
 	{
-		hand[j] = deck[0];
+		hand.push_back(deck[0]);
 		deck.erase(deck.begin());
 	}
 	return hand;
