@@ -18,9 +18,13 @@ void host()
 	int pCount;
 	std::cin >> pCount;
 
+	// socketit yhdistell‰‰n, ja kysell‰‰n nimet;
+	std::vector<std::string> names;
+	names.push_back("Jyrki");
+	names.push_back("Jyrki2");
 	for (int i = 0; i < pCount; i++)
 	{
-		Player p(i);
+		Player p(i,names[0]);
 		Players.push_back(p);
 	}
 
@@ -73,6 +77,62 @@ void host()
 }
 void client()
 {
+	std::string name;
+	std::cout << "giv neim, pls"<<std::endl;
+	std::cin >> name;
+
+	int ip;
+	std::cout << "giv ip, plz" << std::endl;
+	std::cin >> ip;
+	
+	int topCard = 0;
+	int currentCard;
+	// liityt‰‰n hostiin. Odotetaan ett‰ hosti antaa tiedon numerosta
+
+	int pNumber = 2; // hostin tieto numerosta t‰h‰n
+	// odotellaan kortteja
+
+	std::vector<Kortti> Hand;
+	// Hand = socketin kautta tullut korttivektori
+	
+	// pist‰n v‰liaikasesti muutaman kortin
+	Kortti a (3,Diamonds);
+	Hand.push_back(a);
+	Hand.push_back(a);
+	Hand.push_back(a);
+	Hand.push_back(a);
+	Hand.push_back(a);
+
+	gameOver = false;
+while(gameOver = false)
+{
+	// odotetaan viesti‰ onko MAAILMANLOPPU TULLUT
+	// odotetaan viesti‰ onko minu vuoro
+
+	int message = 2; // eli kenen vuoro, v‰liaikasesti 2;
+	if (message == pNumber)
+	{
+		std::cout << "===========================" << std::endl;
+		std::cout << "Valitse poistettava kortti" << std::endl;
+		for (int i = 0; i < Hand.size(); i++)
+		{
+			std::cout << i <<"="<< Hand[i].suit << std::endl;
+		}
+		std::cout << "===========================" << std::endl;
+		int selection;
+		std::cin >> selection;
+		currentCard = Hand[selection].value;
+		Hand.erase(Hand.begin()+selection);
+		if ( topCard < currentCard)
+			topCard = currentCard;
+	}
+	else
+	{
+		//odotellaan hostila korttia jonka toinen pelaaja on pelannut
+		//currentCard = hostilta tullu kortti
+		if (topCard < currentCard)
+			topCard = currentCard;
+	}
 
 }
 int main()
