@@ -80,16 +80,10 @@ void client()
 {
 
 	
-	std::string name;
-	std::cout << "giv neim, pls"<<std::endl;
-	std::cin >> name;
 
-	int ip;
-	std::cout << "giv ip, plz" << std::endl;
-	std::cin >> ip;
-	
-	int topCard = 0;
-	int currentCard;
+	sf::Vector2f cardSize(150,240);
+	Kortti topCard(0,0);
+	Kortti currentCard(0,0);
 	// liityt‰‰n hostiin. Odotetaan ett‰ hosti antaa tiedon numerosta
 
 	int pNumber = 2; // hostin tieto numerosta t‰h‰n
@@ -100,15 +94,27 @@ void client()
 	
 	// pist‰n v‰liaikasesti muutaman kortin
 	Kortti a (3,Diamonds);
+	Kortti b (4,Clubs);
+	Kortti c (9,Hearts);
+	Kortti d (6,Diamonds);
+	Kortti e (7,Spades);
+	Kortti f (2,Clubs);
+	Kortti g (1,Spades);
 	Hand.push_back(a);
-	Hand.push_back(a);
-	Hand.push_back(a);
-	Hand.push_back(a);
-	Hand.push_back(a);
+	Hand.push_back(b);
+	Hand.push_back(c);
+	Hand.push_back(d);
+	Hand.push_back(e);
+	Hand.push_back(f);
+	Hand.push_back(g);
+
+	std::vector<sf::FloatRect> areaVector;
 
 	bool gameOver = false;
-	sf::RenderWindow clientWindow(sf::VideoMode(900,1000), "Master of card games");
+	sf::RenderWindow clientWindow(sf::VideoMode(1500,1000), "Master of card games");
 
+	int cardsOnHand = 0;
+	bool mousePressed = 0;
 	while(clientWindow.isOpen() && gameOver == false)
 	{
 		sf::Event event;
@@ -119,38 +125,46 @@ void client()
 		}
 		clientWindow.clear(sf::Color::Magenta);
 
-	Draw drawSys(&Hand, &clientWindow);
+	Draw drawSys(&Hand, &clientWindow, &topCard,&currentCard, cardSize);
 
+	if(cardsOnHand != Hand.size())
+	{
+		areaVector.clear();
+		float positionX = clientWindow.getSize().x/Hand.size();
+		for (int i = 0; i < Hand.size(); i++)
+		{
+			sf::FloatRect area(i*positionX,750,cardSize.x,cardSize.y);
+				areaVector.push_back(area);
+		}
+		cardsOnHand = Hand.size();
+	
+	}
 
 			// odotetaan viesti‰ onko MAAILMANLOPPU TULLUT gameOver = true;
 			// odotetaan viesti‰ onko minu vuoro
-
-		int message = 2; // eli kenen vuoro, v‰liaikasesti 2;
-		if (message == pNumber)
+	int selection;
+	if(sf::Mouse::isButtonPressed(sf::Mouse::Left)==0)
+	{
+		mousePressed = 0;
+	}
+	if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && mousePressed == 0)
+	{
+		sf::Vector2i mousePosition = sf::Mouse::getPosition(clientWindow);
+		mousePressed = 1;
+		for(int i = 0; i < areaVector.size(); i++)
 		{
-			std::cout << "===========================" << std::endl;
-			std::cout << "Valitse poistettava kortti" << std::endl;
-			for (int i = 0; i < Hand.size(); i++)
+			if (areaVector[i].left < mousePosition.x && areaVector[i].top < mousePosition.y && areaVector[i].left+areaVector[i].width > mousePosition.x && areaVector[i].top+areaVector[i].height > mousePosition.y)
 			{
-				std::cout << i <<"="<< Hand[i].value << std::endl;
+				currentCard = Hand[i];
+				Hand.erase(Hand.begin()+i);
+				areaVector.erase(areaVector.begin()+i);
 			}
-			std::cout << "===========================" << std::endl;
-			int selection;
-			std::cin >> selection;
-			currentCard = Hand[selection].value;
-			Hand.erase(Hand.begin()+selection);
+		}
+	}
 
-		}
-		else
-		{
-			//odotellaan hostila korttia jonka toinen pelaaja on pelannut
-			//currentCard = hostilta tullu kortti
-	
-		}
-		if ( topCard < currentCard)
+		if ( topCard.value < currentCard.value)
 			topCard = currentCard;
 
-		std::cout << "Current top card: "<< topCard << "Current card: " << currentCard << std::endl;
 
 		drawSys.drawLoop();
 		clientWindow.display();
