@@ -175,7 +175,7 @@ int main()
 		window.draw(drawText);
 		Table.drawTable();
 		window.display();
-		window.clear();
+		window.clear(sf::Color(100,100,100,256));
 	}
 	return 0;
 }

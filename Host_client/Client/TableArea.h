@@ -15,5 +15,8 @@ private:
 	Hand _cardDisplay;
 	sf::Vector2u _windowSize;
 	std::vector<sf::RectangleShape>_cardShapes;
+	sf::Font _cardFont;
+	sf::Texture *_suitTexture;
+	sf::Sprite _suitSprite;
 };
 

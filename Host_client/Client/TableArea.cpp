@@ -1,10 +1,16 @@
 #include "TableArea.h"
+#include <sstream>
 
 
 TableArea::TableArea(sf::FloatRect area,sf::Vector2u windowsize)
 {
 	_area = area;
 	_windowSize = windowsize;
+	_suitTexture = new sf::Texture;
+	if((*_suitTexture).loadFromFile("suits_tilemap.png"))
+		std::cout << "suits loaded succesfully" << std::endl;
+	_cardFont.loadFromFile("comic.ttf");
+	_suitSprite.setTexture(*_suitTexture);
 }
 
 void TableArea::lineUp()
@@ -25,7 +31,42 @@ void TableArea::draw(sf::RenderWindow &window)
 {
 	for(int i = 0; i < _cardShapes.size();i++)
 	{
+		sf::Text text;
+		text.setFont(_cardFont);
+		text.setCharacterSize(32);
+		text.setPosition(_cardShapes[i].getPosition().x, _cardShapes[i].getPosition().y + 32.f);
+
 		window.draw(_cardShapes[i]);
+		if(_cardDisplay.hand[i].suit == Spades) //toimii :DDDDdd
+		{
+			_suitSprite.setTextureRect(sf::IntRect(0,0,_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f));
+			text.setColor(sf::Color::Black);
+		}
+		else if(_cardDisplay.hand[i].suit == Hearts)
+		{
+			_suitSprite.setTextureRect(sf::IntRect(_suitTexture->getSize().x*0.5f,0,_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f));
+			text.setColor(sf::Color::Red);
+		}
+		else if(_cardDisplay.hand[i].suit == Clubs)
+		{
+			_suitSprite.setTextureRect(sf::IntRect(0,_suitTexture->getSize().y*0.5f,_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f));
+			text.setColor(sf::Color::Black);
+		}
+		else if(_cardDisplay.hand[i].suit == Diamonds)
+		{
+			_suitSprite.setTextureRect(sf::IntRect(_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f,_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f));
+			text.setColor(sf::Color::Red);
+		}
+		_suitSprite.setPosition(_cardShapes[i].getPosition());
+		window.draw(_suitSprite);
+
+		std::stringstream ss;
+		ss<<_cardDisplay.hand[i].value;
+		std::string cardValue = ss.str();
+		text.setString(cardValue);
+		window.draw(text);
+
+		
 	}
 }
 
