@@ -1,5 +1,6 @@
 #include "Hand.h"
 #include "Card.h"
+#include "Table.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Network.hpp>
 #include <string>
@@ -25,9 +26,17 @@ int main()
 	sf::RenderWindow window(sf::VideoMode(800,600,32), "Chat");
 	std::vector<sf::Text> chat;
 
-	sf::Packet packet;
-	packet << id;
-	socket.send(packet);
+	Table Table(window);
+
+	Table.addPlayer(id);
+
+	Hand hand, table;
+
+	sf::Uint16 packetID, playerCount;
+
+	sf::Packet IDPacket;
+	IDPacket << id;
+	socket.send(IDPacket);
 	socket.setBlocking(false);
 
 	window.setTitle(id);
@@ -35,7 +44,6 @@ int main()
 	sf::Font font;
 	font.loadFromFile("comic.ttf");
 
-	bool turn = false;
 
 	while(window.isOpen())
 	{
@@ -51,7 +59,7 @@ int main()
 			case sf::Event::KeyPressed:
 				if(Event.key.code == sf::Keyboard::Escape)
 					window.close();
-				else if(Event.key.code == sf::Keyboard::Return && turn)
+				/*else if(Event.key.code == sf::Keyboard::Return)
 				{
 					sf::Packet packet3;
 					packet3 << id;
@@ -60,7 +68,6 @@ int main()
 					displayText.setColor(sf::Color::Green);
 					chat.push_back(displayText);
 					text = "";
-					turn = false;
 				}
 				else if(Event.key.code == sf::Keyboard::BackSpace)
 				{
@@ -68,34 +75,91 @@ int main()
 				}
 				break;
 			case sf::Event::TextEntered:
-				text += Event.text.unicode;
+				text += Event.text.unicode;*/
 				break;
 			}
 		}
 
-		sf::Packet packet4;
-		socket.receive(packet4);
+		sf::Packet receivePacket;
 		
-		Hand hand;
-		if(packet4 >> hand  >> turn)
+		socket.receive(receivePacket);
+		
+		Hand sendHand;
+		sf::Packet sendPacket;
+		
+		packetID = 0;
+		
+		receivePacket>>packetID;
+
+
+		switch (packetID)
 		{
-			std::cout<<hand.hand[0].suit<<" "<<hand.hand[0].value<<std::endl;
-			std::cout<<hand.hand[1].suit<<" "<<hand.hand[1].value<<std::endl;
-			std::string temptext = "";
-			/*for(int i = 0; i < hand.hand.size(); i++)
+
+		case 0:
+			break;
+
+		case 1:
+			receivePacket>>hand>>playerCount;
+
+			for(int i = 0; i < playerCount; i++)
 			{
-				if(hand.hand[i].suit == Hearts)
-					temptext = "Hearts " + hand.hand[i].value;
-				if(hand.hand[i].suit == Diamonds)
-					temptext = "Diamonds " + hand.hand[i].value;
-				if(hand.hand[i].suit == Clubs)
-					temptext = "Clubs " + hand.hand[i].value;
-				if(hand.hand[i].suit == Spades)
-					temptext = "Spades" + hand.hand[i].value;
-			}*/
-			sf::Text displayText(temptext,font,20);
-			displayText.setColor(sf::Color::Red);
-			chat.push_back(displayText);
+				std::string tempText;
+				receivePacket>>tempText;
+				std::cout<<tempText<<" joined"<<std::endl;
+				Table.addPlayer(tempText);
+			}
+
+
+			Table.addToTable(id,hand);
+
+			std::cout<<"Your hand:"<<std::endl;
+
+			for(int i=0; i<hand.hand.size(); i++)
+			{
+				std::cout<<hand.hand[i].suit<<" "<<hand.hand[i].value<<std::endl;
+			}
+			break;
+		case 2:
+			
+			std::cout << "===========================" << std::endl;
+			std::cout << "Valitse pelattava kortti" << std::endl;
+			for (int i = 0; i < hand.hand.size(); i++)
+			{
+				std::cout << i <<"="<< hand.hand[i].value << std::endl;
+			}
+			std::cout << "===========================" << std::endl;
+			int selection;
+			std::cin >> selection;
+
+			sendHand.add(hand.hand[selection]);
+
+			sendPacket<<sendHand;
+			socket.send(sendPacket);
+
+			Table.removeFromTable(id, sendHand);
+
+			hand.hand.erase(hand.hand.begin()+selection);
+
+			break;
+		case 3:
+			table.hand.clear();
+
+			receivePacket>>text>>table;
+
+			std::cout<<text<<" plays: "<<table.hand[0].suit<<" "<<table.hand[0].value<<std::endl;
+
+			Table.addToTable(text, table);
+
+			break;
+		case 4:
+			text.clear();
+			receivePacket>>text;
+			
+			if(text.size()>0)
+			{
+			std::cout<<text<<" turn"<<std::endl;
+			}
+			break;
 		}
 
 		int i = 0;
@@ -109,6 +173,7 @@ int main()
 		drawText.setColor(sf::Color::Magenta);
 		drawText.setPosition(0, i*20);
 		window.draw(drawText);
+		Table.drawTable();
 		window.display();
 		window.clear();
 	}

@@ -1,5 +1,6 @@
 #include "Dealer.h"
 #include "Player.h"
+#include "Hand.h"
 
 #include <SFML\Graphics.hpp>
 #include <SFML\Network.hpp>
@@ -13,7 +14,7 @@ int main()
 {
 	std::cout<<"Server Running"<<std::endl;
 
-	int playerCount;
+	sf::Uint16 playerCount;
 
 	std::cout<<"Enter the number of players: ";
 	std::cin>>playerCount;
@@ -24,6 +25,8 @@ int main()
 	bool gameOn = false;
 	std::vector<sf::TcpSocket*> clients;
 	std::vector<Player> players;
+
+	sf::Uint16 packetID;
 
 	int port = 2000;
 
@@ -56,8 +59,15 @@ int main()
 				players[i].setHand(dealer.deal(2));
 				
 				sf::Packet cardPacket;
+				packetID = 1;
 				bool turn = false;
-				cardPacket<<players[i].getHand()<<turn;
+				sf::Uint16 other_playerCount = playerCount-1;
+				cardPacket<<packetID<<players[i].getHand()<<other_playerCount;
+				for(int j = 0; j < playerCount; j++)
+				{
+					if(i != j)
+						cardPacket<<players[j].getID();
+				}
 				clients[i]->send(cardPacket);
 			}
 			gameOn = true;
@@ -69,17 +79,23 @@ int main()
 			for(int i = 0; i < clients.size();)
 			{
 
-				sf::Packet sendPacket;
+				sf::Packet startPacket;
+				packetID = 2;
 
-				std::string text;
-				bool turn;
+				startPacket<<packetID;
 
-				turn = true;
-				text = "SERVER:  YOUR TURN";
+				clients[i]->send(startPacket);
 
-				sendPacket<<players[i].getHand()<<turn;
+				sf::Packet waitPacket;
+				packetID = 4;
 
-				clients[i]->send(sendPacket);
+				waitPacket<<packetID<<players[i].getID();
+
+				for(int j = 0; j < clients.size(); j++)
+				{
+					if(i != j)
+						clients[j]->send(waitPacket);
+				}
 
 					std::cout<<players[i].getID()<<" turn"<<std::endl;
 					if(selector.wait())
@@ -90,16 +106,17 @@ int main()
 							if(clients[i]->receive(packet) == sf::Socket::Done)
 							{
 								std::cout<<"Received packet from "<<players[i].getID()<<std::endl;
-								std::string text2;
-								packet >> text2;
-								turn = false;
-								sendPacket.clear();
-								sendPacket << text2 << turn;
+								Hand hand;
+								packet >> hand;
+								sf::Packet turnPacket;
+								packetID = 3;
+								turnPacket << packetID << players[i].getID() << hand;
 								for(int j = 0; j < clients.size(); j++)
 								{
 									if(i != j)
-										clients[j]->send(sendPacket);
+										clients[j]->send(turnPacket);
 								}
+
 								i++;
 							}
 						}

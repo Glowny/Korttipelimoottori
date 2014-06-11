@@ -26,6 +26,6 @@ public:
 	Card(int v, int s) : value(v), suit(s){}
 	Card(){}
 	/*~Card(void);*/
-sf::Uint8 value;
-sf::Uint8 suit;
+sf::Uint16 value;
+sf::Uint16 suit;
 };
