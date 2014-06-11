@@ -14,7 +14,6 @@ int main()
 	sf::TcpSocket socket;
 	std::string id;
 	std::string text = "";
-	Card card;
 
 	std::cout<<"Enter online ID: ";
 	std::cin>>id;
@@ -55,7 +54,7 @@ int main()
 				else if(Event.key.code == sf::Keyboard::Return && turn)
 				{
 					sf::Packet packet3;
-					packet3 << id << card;
+					packet3 << id;
 					socket.send(packet3);
 					sf::Text displayText(text, font, 20);
 					displayText.setColor(sf::Color::Green);
@@ -78,10 +77,12 @@ int main()
 		socket.receive(packet4);
 		
 		Hand hand;
-		if(packet4 >> hand >> turn)
+		if(packet4 >> hand  >> turn)
 		{
-			std::string temptext;
-			for(int i = 0; i < hand.hand.size(); i++)
+			std::cout<<hand.hand[0].suit<<" "<<hand.hand[0].value<<std::endl;
+			std::cout<<hand.hand[1].suit<<" "<<hand.hand[1].value<<std::endl;
+			std::string temptext = "";
+			/*for(int i = 0; i < hand.hand.size(); i++)
 			{
 				if(hand.hand[i].suit == Hearts)
 					temptext = "Hearts " + hand.hand[i].value;
@@ -91,7 +92,7 @@ int main()
 					temptext = "Clubs " + hand.hand[i].value;
 				if(hand.hand[i].suit == Spades)
 					temptext = "Spades" + hand.hand[i].value;
-			}
+			}*/
 			sf::Text displayText(temptext,font,20);
 			displayText.setColor(sf::Color::Red);
 			chat.push_back(displayText);

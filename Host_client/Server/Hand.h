@@ -8,6 +8,8 @@ class Hand
 
 friend sf::Packet& operator <<(sf::Packet& packet, const Hand& hand)
 	{
+		sf::Uint16 size = hand.hand.size();
+		packet<<size;
 		for(int i = 0; i < hand.hand.size(); i++)
 		{
 			packet<<hand.hand[i];
@@ -18,6 +20,13 @@ friend sf::Packet& operator <<(sf::Packet& packet, const Hand& hand)
 
 friend sf::Packet& operator >>(sf::Packet& packet, Hand& hand)
 	{
+		sf::Uint16 size;
+		packet>>size;
+		Card c;
+		for(int i = 0; i<size; i++)
+		{
+			hand.hand.push_back(c);
+		}
 		for(int i = 0; i < hand.hand.size(); i++)
 		{
 			packet>>hand.hand[i];
@@ -28,7 +37,7 @@ friend sf::Packet& operator >>(sf::Packet& packet, Hand& hand)
 
 public:
 	Hand(){}
-	~Hand(void);
+	/*~Hand(void);*/
 
 	void setHand(std::vector<Card> h){hand = h;}
 	void add(Card c){hand.push_back(c);}

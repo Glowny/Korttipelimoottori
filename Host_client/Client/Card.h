@@ -23,8 +23,9 @@ friend sf::Packet& operator >>(sf::Packet& packet, Card& Card)
 }
 
 public:
+	Card(){}
 	Card(int v, int s) : value(v), suit(s){}
-	~Card(void);
+	//~Card(void);
 sf::Uint8 value;
 sf::Uint8 suit;
 };
