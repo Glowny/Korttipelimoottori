@@ -114,7 +114,7 @@ void Server::run()
 						//l‰hetet‰‰n muille pelaajille pelaajan x pelatut kortit
 						_packet.clear();
 						_packetID = 3;
-						_packet << _packetID << _players[i].getID() << receivedHand;
+						_packet << _packetID << receivedHand;
 						for(int j = 0; j < _clients.size(); j++)
 						{
 							if(i != j)

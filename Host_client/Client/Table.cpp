@@ -3,7 +3,7 @@
 
 Table::Table(sf::RenderWindow &window):_window(window)
 {
-	sf::Vector2u size = window.getSize();
+	sf::Vector2u size = _window.getSize();
 	
 	_tableAreas.push_back(TableArea(sf::FloatRect(0.25f*size.x,0.75f*size.y,0.5f*size.x,0.25*size.y),size));
 	_tableAreas.push_back(TableArea(sf::FloatRect(0,0.25f*size.y,0.25f*size.x,0.5*size.y),size));
