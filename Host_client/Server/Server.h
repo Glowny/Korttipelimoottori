@@ -10,6 +10,7 @@ public:
 	void initialize();
 	void setUp(int startingHand);
 	void run();
+	void reset();
 private:
 	sf::Uint16 _playerCount;
 	sf::TcpListener _listener;
@@ -20,4 +21,5 @@ private:
 	sf::Uint16 _packetID;
 	sf::Packet _packet;
 	int _port;
+	int _startingHand;
 };

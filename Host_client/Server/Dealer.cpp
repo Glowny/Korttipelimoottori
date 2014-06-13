@@ -12,6 +12,7 @@ Dealer::~Dealer(void)
 {
 }
 
+
 void Dealer::initialize()
 {
 	deck.clear();

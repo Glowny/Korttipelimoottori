@@ -24,6 +24,7 @@ void Client::initialize()
 	
 	std::cout<<_ip.toString()<<std::endl;
 	_id = _startScreen.getID();
+	_window.setTitle(_id);
 
 	_table.addPlayer(_id);
 

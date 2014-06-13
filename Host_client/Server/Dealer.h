@@ -7,11 +7,11 @@ class Dealer
 public:
 	Dealer(void);
 	~Dealer(void);
-
 	void shuffle();
 	std::vector<Card> deal(int i);
+	void initialize();
 	
 private:
 	std::vector<Card> deck;
-	void initialize();
+	
 };

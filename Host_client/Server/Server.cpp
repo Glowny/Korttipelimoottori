@@ -45,8 +45,48 @@ void Server::initialize()
 
 }
 
+void Server::reset()
+{
+	_packet.clear();
+	_clients.clear();
+	_players.clear();
+	_dealer.initialize();
+	_selector.clear();
+	_selector.add(_listener);
+
+	int connections = 0;
+
+	std::cout << "Waiting for connections.." <<std::endl;
+	while(connections < _playerCount)
+	{
+	if(_selector.wait())
+		{
+			if(_selector.isReady(_listener))
+			{	
+				std::string id;
+
+				sf::TcpSocket* socket = new sf::TcpSocket;
+				_listener.accept(*socket);
+				
+				_packet.clear();
+				if(socket->receive(_packet) == sf::Socket::Done)
+					_packet>>id;
+
+				_players.push_back(Player(id));
+				std::cout<<id<<" has connected to the session"<<std::endl;
+				_clients.push_back(socket);
+				_selector.add(*socket);
+
+				connections++;
+			}
+		}
+	}
+	setUp(_startingHand);
+}
+
 void Server::setUp(int startingHand)
 {
+		_startingHand = startingHand;
 		std::cout << "Running setup.." << std::endl;
 		_dealer.shuffle();
 
@@ -94,15 +134,17 @@ void Server::run()
 				if(i != j)
 					_clients[j]->send(_packet);
 			}
-				
+			
 			std::cout<<_players[i].getID()<<" turn"<<std::endl;
-
+				
 
 			//Venaa sitä kenen vuoro on, että tulee kamaa rööriin
 			if(_selector.wait())
 			{
+
 				if(_selector.isReady(*_clients[i]))
 				{
+
 					_packet.clear();
 					if(_clients[i]->receive(_packet) == sf::Socket::Done)
 					{
@@ -128,8 +170,12 @@ void Server::run()
 
 						i++;
 					}
+					else
+					reset();
 				}
+		
 			}
+			
 		}
 }
 
