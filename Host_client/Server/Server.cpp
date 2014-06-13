@@ -110,6 +110,11 @@ void Server::run()
 						std::cout<<"Received packet from "<<_players[i].getID()<<std::endl;
 						Hand receivedHand;
 						_packet >> receivedHand;
+
+						for(int i=0; i<receivedHand.hand.size(); i++)
+						{
+							std::cout<<receivedHand.hand[i].suit<<" "<<receivedHand.hand[i].value<<std::endl;
+						}
 								
 						//lähetetään muille pelaajille pelaajan x pelatut kortit
 						_packet.clear();

@@ -17,6 +17,8 @@ void TableArea::lineUp()
 { 
 	float width = _area.width;
 	float height = _area.height;
+
+	if(_cardDisplay.hand.size()>0)
 	width/=_cardDisplay.hand.size();
 
 	for(int i = 0; i < _cardShapes.size();i++)
@@ -72,18 +74,24 @@ void TableArea::draw(sf::RenderWindow &window)
 
 void TableArea::removeCards(Hand cards)
 {
+	bool erased;
+
 	for(int i = 0; i < _cardDisplay.hand.size();)
 	{
+		erased = false;
 		for(int j = 0; j < cards.hand.size();j++)
 		{
 			if(cards.hand[j] == _cardDisplay.hand[i])
 			{
+				std::cout << "Deleted: " << _cardDisplay.hand[i].suit << std::endl
+						<<	_cardDisplay.hand[i].value << std::endl;
 				_cardDisplay.hand.erase(_cardDisplay.hand.begin()+i);
 				_cardShapes.erase(_cardShapes.begin()+i);
+				erased = true;
 			}
-			else
-			i++;
 		}
+		if(!erased)
+			i++;
 		
 	}
 	lineUp();

@@ -16,9 +16,12 @@ public:
 
 private:
 	void draw();
+	bool checkInput();
 	void initialize();
 	void receiver();
 	int _port;
+	sf::RectangleShape _palikka;
+	std::vector<int>_selections;
 	sf::IpAddress _ip;
 	std::string _id, _currentPlayer;
 	sf::Packet _packet;
@@ -26,7 +29,8 @@ private:
 	sf::TcpSocket _socket;
 	sf::RenderWindow &_window;
 	StartScreen _startScreen;
-	int _playerCount;
+	sf::Uint16 _playerCount;
 	Table _table;
 	Hand _hand, _tempHand;
+	sf::Clock _jumitusClock;
 };

@@ -8,9 +8,11 @@ public:
 	~TableArea(void);
 	void addCards(Hand handoftheking);
 	void removeCards(Hand cards);
-	void lineUp();
 	void draw(sf::RenderWindow &window);
+	std::vector<sf::RectangleShape> getCardShapes(){return _cardShapes;}
+	void setRectColor(sf::Color color, int rectIndex){_cardShapes[rectIndex].setFillColor(color);}
 private:
+	void lineUp();
 	sf::FloatRect _area;
 	Hand _cardDisplay;
 	sf::Vector2u _windowSize;
@@ -19,4 +21,3 @@ private:
 	sf::Texture *_suitTexture;
 	sf::Sprite _suitSprite;
 };
-

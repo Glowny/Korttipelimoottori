@@ -11,7 +11,7 @@ int main()
 {
 	Server server;
 	server.initialize();
-	server.setUp(20);
+	server.setUp(7);
 
 	while(true)
 	{

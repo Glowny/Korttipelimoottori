@@ -44,7 +44,14 @@ void Table::drawTable()
 	}
 }
 
-
+std::vector<sf::RectangleShape> Table::getCardRectangles(std::string player)
+{
+	for(int i = 0; i < _players.size(); i++)
+	{
+		if(player == _players[i])
+			return _tableAreas[i].getCardShapes();
+	}
+}
 
 
 Table::~Table(void)

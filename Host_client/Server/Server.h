@@ -21,4 +21,3 @@ private:
 	sf::Packet _packet;
 	int _port;
 };
-
