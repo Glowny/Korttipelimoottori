@@ -3,23 +3,12 @@
 #include "Card.h"
 #include "Table.h"
 #include "StartScreen.h"
-#include "UserInterface.h"
 #include <string>
 #include <iostream>
 #include <vector>
 
-enum PACKET_ID
-{
-	WAIT,
-	GAME_START,
-	CARD_PLAY,
-	TABLE_UPDATE,
-	TURN_UPDATE,
-};
-
 class Client
 {
-
 public:
 	Client(sf::RenderWindow &window);
 	~Client(void);
@@ -27,9 +16,12 @@ public:
 
 private:
 	void draw();
+	bool checkInput();
 	void initialize();
 	void receiver();
 	int _port;
+	sf::RectangleShape _palikka;
+	std::vector<int>_selections;
 	sf::IpAddress _ip;
 	std::string _id, _currentPlayer;
 	sf::Packet _packet;
@@ -39,6 +31,6 @@ private:
 	StartScreen _startScreen;
 	sf::Uint16 _playerCount;
 	Table _table;
-	Hand _tempHand;
-	UserInterface _UI;
+	Hand _hand, _tempHand;
+	sf::Clock _jumitusClock;
 };

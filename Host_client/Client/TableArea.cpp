@@ -2,50 +2,28 @@
 #include <sstream>
 
 
-TableArea::TableArea(sf::FloatRect area)
+TableArea::TableArea(sf::FloatRect area,sf::Vector2u windowsize)
 {
 	_area = area;
-	_cardFont = new sf::Font;
+	_windowSize = windowsize;
 	_suitTexture = new sf::Texture;
 	if((*_suitTexture).loadFromFile("suits_tilemap.png"))
 		std::cout << "suits loaded succesfully" << std::endl;
-	_cardFont->loadFromFile("comic.ttf");
+	_cardFont.loadFromFile("comic.ttf");
+	_suitSprite.setTexture(*_suitTexture);
 }
 
 void TableArea::lineUp()
 { 
-	if(_cardObjects.size()>0)
-	{
 	float width = _area.width;
 	float height = _area.height;
-	
-	
 
-	if(width > height)
+	if(_cardDisplay.hand.size()>0)
+	width/=_cardDisplay.hand.size();
+
+	for(int i = 0; i < _cardShapes.size();i++)
 	{
-		width/=_cardObjects.size();
-
-		for(int i = 0; i < _cardObjects.size();i++)
-		{
-			_cardObjects[i].setPosition(sf::Vector2f(_area.left+i*width,_area.top));
-			if(_area.top == 0)
-				_cardObjects[i].setRotation(180);
-		}
-		
-	}
-	else
-	{
-		height/=_cardObjects.size();
-
-		for(int i = 0; i < _cardObjects.size();i++)
-		{
-			_cardObjects[i].setPosition(sf::Vector2f(_area.left+width,_area.top+i*height));
-			if(_area.left == 0)
-				_cardObjects[i].setRotation(90);
-			else
-				_cardObjects[i].setRotation(270);
-		}
-	}
+		_cardShapes[i].setPosition(_area.left+i*width,_area.top+height*0.5f);
 	}
 }
 
@@ -53,9 +31,44 @@ void TableArea::lineUp()
 
 void TableArea::draw(sf::RenderWindow &window)
 {
-	for(int i = 0; i < _cardObjects.size(); i++)
+	for(int i = 0; i < _cardShapes.size();i++)
 	{
-		_cardObjects[i].draw(window);
+		sf::Text text;
+		text.setFont(_cardFont);
+		text.setCharacterSize(32);
+		text.setPosition(_cardShapes[i].getPosition().x, _cardShapes[i].getPosition().y + 32.f);
+
+		window.draw(_cardShapes[i]);
+		if(_cardDisplay.hand[i].suit == Spades) //toimii :DDDDdd
+		{
+			_suitSprite.setTextureRect(sf::IntRect(0,0,_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f));
+			text.setColor(sf::Color::Black);
+		}
+		else if(_cardDisplay.hand[i].suit == Hearts)
+		{
+			_suitSprite.setTextureRect(sf::IntRect(_suitTexture->getSize().x*0.5f,0,_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f));
+			text.setColor(sf::Color::Red);
+		}
+		else if(_cardDisplay.hand[i].suit == Clubs)
+		{
+			_suitSprite.setTextureRect(sf::IntRect(0,_suitTexture->getSize().y*0.5f,_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f));
+			text.setColor(sf::Color::Black);
+		}
+		else if(_cardDisplay.hand[i].suit == Diamonds)
+		{
+			_suitSprite.setTextureRect(sf::IntRect(_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f,_suitTexture->getSize().x*0.5f,_suitTexture->getSize().y*0.5f));
+			text.setColor(sf::Color::Red);
+		}
+		_suitSprite.setPosition(_cardShapes[i].getPosition());
+		window.draw(_suitSprite);
+
+		std::stringstream ss;
+		ss<<_cardDisplay.hand[i].value;
+		std::string cardValue = ss.str();
+		text.setString(cardValue);
+		window.draw(text);
+
+		
 	}
 }
 
@@ -63,16 +76,17 @@ void TableArea::removeCards(Hand cards)
 {
 	bool erased;
 
-	for(int i = 0; i < _cardObjects.size();)
+	for(int i = 0; i < _cardDisplay.hand.size();)
 	{
 		erased = false;
 		for(int j = 0; j < cards.hand.size();j++)
 		{
-			if(cards.hand[j] == _cardObjects[i])
+			if(cards.hand[j] == _cardDisplay.hand[i])
 			{
-				std::cout << "Deleted: " << _cardObjects[i].suit << std::endl
-						<<	_cardObjects[i].value << std::endl;
-				_cardObjects.erase(_cardObjects.begin()+i);
+				std::cout << "Deleted: " << _cardDisplay.hand[i].suit << std::endl
+						<<	_cardDisplay.hand[i].value << std::endl;
+				_cardDisplay.hand.erase(_cardDisplay.hand.begin()+i);
+				_cardShapes.erase(_cardShapes.begin()+i);
 				erased = true;
 			}
 		}
@@ -83,23 +97,13 @@ void TableArea::removeCards(Hand cards)
 	lineUp();
 }
 
-void TableArea::addCards(Hand cards)
+void TableArea::addCards(Hand nedstark)
 {
-	for(int i = 0; i < cards.hand.size();i++)
+	for(int i = 0; i < nedstark.hand.size();i++)
 	{
-		_cardObjects.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
+		_cardDisplay.hand.push_back(nedstark.hand[i]);
+		_cardShapes.push_back(sf::RectangleShape(sf::Vector2f(50,100)));
 	}
-
-	for(int i = 0; i < _cardObjects.size();i++)
-	{
-
-	if(_area.width > _area.height)
-	_cardObjects[i].setSize(sf::Vector2f(_area.height*0.5f,_area.height));
-
-	else
-	_cardObjects[i].setSize(sf::Vector2f(_area.width*0.5f,_area.width));
-	}
-
 	lineUp();
 }
 

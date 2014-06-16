@@ -93,7 +93,7 @@ void Server::setUp(int startingHand)
 		for(int i = 0; i < _clients.size(); i++)
 		{
 			_players[i].setHand(_dealer.deal(startingHand));
-			_packetID = GAME_START;
+			_packetID = 1;
 			sf::Uint16 otherPlayers = _playerCount-1;
 
 			_packet.clear();
@@ -119,14 +119,14 @@ void Server::run()
 		{
 			//L‰hetet‰‰n pelaajalle, jonka vuoro on, ett‰ sun vuoro on
 			_packet.clear();
-			_packetID = CARD_PLAY;
+			_packetID = 2;
 			_packet<<_packetID;
 			_clients[i]->send(_packet);
 
 			//L‰hetet‰‰n muille, joiden vuoro ei ole, ett‰ sun vuoro ei ole
 			//ja ett‰ kenen vuoro se nyt on
 			_packet.clear();
-			_packetID = TURN_UPDATE;
+			_packetID = 4;
 			_packet<<_packetID<<_players[i].getID();
 
 			for(int j = 0; j < _clients.size(); j++)
@@ -160,7 +160,7 @@ void Server::run()
 								
 						//l‰hetet‰‰n muille pelaajille pelaajan x pelatut kortit
 						_packet.clear();
-						_packetID = TABLE_UPDATE;
+						_packetID = 3;
 						_packet << _packetID << receivedHand;
 						for(int j = 0; j < _clients.size(); j++)
 						{
