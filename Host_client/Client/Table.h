@@ -15,8 +15,6 @@ public:
 	void drawTable();
 	void removeFromTable(std::string player,Hand h);
 	void addPlayer(std::string player);
-	std::vector<sf::RectangleShape> getCardRectangles(std::string player);
-	void setRectColor(sf::Color color, int rectIndex){_tableAreas[0].setRectColor(color,rectIndex);}
 
 private:
 	std::vector<std::string>_players;
