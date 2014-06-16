@@ -2,6 +2,16 @@
 #include "SFML\Network.hpp"
 #include "Dealer.h"
 #include "Player.h"
+
+enum PACKET_ID
+{
+	WAIT,
+	GAME_START,
+	CARD_PLAY,
+	TABLE_UPDATE,
+	TURN_UPDATE,
+};
+
 class Server
 {
 public:
