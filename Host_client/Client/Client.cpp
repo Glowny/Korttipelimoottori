@@ -32,6 +32,7 @@ void Client::initialize()
 	_window.setActive(true);
 	_window.setVisible(true);
 	_UI.addButton("End Turn");
+	_UI.init(_table.getAreas());
 }
 
 void Client::run()
@@ -42,7 +43,7 @@ void Client::run()
 
 void Client::draw()
 {	
-	_window.clear();
+	_window.clear(sf::Color(0,100,0,255));
 	_table.drawTable();
 	_UI.draw();
 	_window.display();
@@ -103,13 +104,19 @@ void Client::receiver()
 			}
 			_tempHand = _UI.getSelected();
 
+			_currentArea = NOTHING;
+
+			_currentArea = _UI.getSelectedArea();
+
 			_packet.clear();
 
-			_packet<<_tempHand;
+			_packet<<_currentArea<<_tempHand;
 
 			_socket.send(_packet);
-
-			_table.addToTable(_id, _tempHand);
+			if(_currentArea == SECONDARY_CARDS)
+				_table.addToTable(_id, _tempHand);
+			else if(_currentArea == TABLE_PILE)
+				_table.addToTable("", _tempHand);
 
 			break;
 
@@ -117,12 +124,16 @@ void Client::receiver()
 		case TABLE_UPDATE:
 			_tempHand.hand.clear();
 
-			_packet>>_tempHand;
+			_currentArea = NOTHING;
+
+			_packet>>_currentArea>>_tempHand;
 
 			if(_tempHand.hand.size()>0)
 				std::cout<<_currentPlayer<<" plays: "<<_tempHand.hand[0].suit<<" "<<_tempHand.hand[0].value<<std::endl;
-
-			_table.addToTable(_currentPlayer, _tempHand);
+			if(_currentArea == SECONDARY_CARDS)
+				_table.addToTable(_currentPlayer, _tempHand);
+			else if(_currentArea == TABLE_PILE)
+				_table.addToTable("",_tempHand);
 
 			break;
 

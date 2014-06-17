@@ -33,10 +33,13 @@ void CardObject::select()
 
 void CardObject::setSize(sf::Vector2f size)
 {
+
 	_shape = sf::RectangleShape(size);
 	_text->setCharacterSize(size.y*0.175f);
 	float scale = (size.x*0.25f)/_suitSprite.getGlobalBounds().width;
 	_suitSprite.scale(scale, scale);
+	_shape.setOutlineThickness(1.0f);
+	_shape.setOutlineColor(sf::Color::Black);
 }
 
 void CardObject::setPosition(sf::Vector2f position)

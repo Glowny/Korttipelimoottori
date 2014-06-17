@@ -2,9 +2,10 @@
 #include <sstream>
 
 
-TableArea::TableArea(sf::FloatRect area)
+TableArea::TableArea(sf::FloatRect area,LINEUP_STYLE lineup)
 {
 	_area = area;
+	_style = lineup;
 	_cardFont = new sf::Font;
 	_suitTexture = new sf::Texture;
 	if((*_suitTexture).loadFromFile("suits_tilemap.png"))
@@ -14,49 +15,97 @@ TableArea::TableArea(sf::FloatRect area)
 
 void TableArea::lineUp()
 { 
-	if(_cardObjects.size()>0)
+	if(_style == POTATO)
 	{
-	float width = _area.width;
-	float height = _area.height;
-	
-	
-
-	if(width > height)
-	{
-		width/=_cardObjects.size();
-
-		for(int i = 0; i < _cardObjects.size();i++)
+		if(_cardObjects.size()>0)
 		{
-			_cardObjects[i].setPosition(sf::Vector2f(_area.left+i*width,_area.top));
-			if(_area.top == 0)
+		float width = _area.width;
+		float height = _area.height;
+	
+	
+
+		if(width > height)
+		{
+			width/=_cardObjects.size();
+
+			for(int i = 0; i < _cardObjects.size();i++)
 			{
-				_cardObjects[i].setRotation(180);
-				_cardObjects[i].setPosition(sf::Vector2f(_area.left+i*width,(_area.top+_cardObjects[i].getArea().height)));
-			}
-		}
-		
-	}
-	else
-	{
-		height/=_cardObjects.size();
-
-		for(int i = 0; i < _cardObjects.size();i++)
-		{
-			
-			if(_area.left == 0)
+				_cardObjects[i].setPosition(sf::Vector2f(_area.left+i*width,_area.top));
+				if(_area.top == 5)
 				{
-				_cardObjects[i].setRotation(90);
-				_cardObjects[i].setPosition(sf::Vector2f(_area.left+width,_area.top+i*height));
+					_cardObjects[i].setRotation(180);
+					_cardObjects[i].setPosition(sf::Vector2f(_area.left+i*width,(_area.top+_cardObjects[i].getArea().height)));
+				}
+			}
+		
+		}
+		else
+		{
+			height/=_cardObjects.size();
+
+			for(int i = 0; i < _cardObjects.size();i++)
+			{
+			
+				if(_area.left == 5)
+					{
+					_cardObjects[i].setRotation(90);
+					_cardObjects[i].setPosition(sf::Vector2f(_area.left+width,_area.top+i*height));
+				
+					}
+				else
+				{
+					_cardObjects[i].setRotation(270);
+					_cardObjects[i].setPosition(sf::Vector2f(_area.left,_area.top+i*height));
 				
 				}
-			else
-			{
-				_cardObjects[i].setRotation(270);
-				_cardObjects[i].setPosition(sf::Vector2f(_area.left,_area.top+i*height));
-				
 			}
 		}
+		}
+
 	}
+	else if(_style == PILE)
+	{
+		float centerx = _area.width*0.5f;
+		float centery = _area.height*0.5f;
+	
+	
+
+		if(_area.width > _area.height)
+		{
+
+			for(int i = 0; i < _cardObjects.size();i++)
+			{
+				_cardObjects[i].setPosition(sf::Vector2f(_area.left+centerx-0.5f*_cardObjects[i].getArea().width,_area.top/*+centery-0.5f*_cardObjects[i].getArea().height*/));
+				if(_area.top == 0)
+				{
+					_cardObjects[i].setRotation(180);
+					_cardObjects[i].setPosition(sf::Vector2f(_area.left+centerx-0.5f*_cardObjects[i].getArea().width,(_area.top+_cardObjects[i].getArea().height)));
+				}
+			}
+		
+		}
+		else
+		{
+
+
+			for(int i = 0; i < _cardObjects.size();i++)
+			{
+			
+				if(_area.left == 0)
+					{
+					_cardObjects[i].setRotation(90);
+					_cardObjects[i].setPosition(sf::Vector2f(_area.left+centerx,_area.top+centery));
+				
+					}
+				else
+				{
+					_cardObjects[i].setRotation(270);
+					_cardObjects[i].setPosition(sf::Vector2f(_area.left,_area.top+0));
+				
+				}
+			}
+		}
+
 	}
 }
 
@@ -64,6 +113,8 @@ void TableArea::lineUp()
 
 void TableArea::draw(sf::RenderWindow &window)
 {
+
+
 	for(int i = 0; i < _cardObjects.size(); i++)
 	{
 		_cardObjects[i].draw(window);

@@ -61,6 +61,8 @@ void ButtonObject::setSize(sf::Vector2f size)
 	else
 		_shape = sf::RectangleShape(size);
 	_text.setCharacterSize(0.5f*size.y);
+	_shape.setOutlineThickness(1.0f);
+	_shape.setOutlineColor(sf::Color::Black);
 }
 
 sf::FloatRect ButtonObject::getArea()

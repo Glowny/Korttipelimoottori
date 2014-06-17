@@ -1,20 +1,15 @@
 #pragma once
-#include "Hand.h"
+#include "PlayArea.h"
 #include <vector>
 #include <string>
 
-class Player
+class Player : public PlayArea
 {
 public:
-	Player(std::string i);
-	void setHand(std::vector<Card> h);
-	Hand getHand();
-	void addCard(Card c);
-	std::string getID();
+	Player(std::string i):id(i){}
+	std::string getID(){return id;}
 	~Player(void);
 
-
 private:
-	Hand hand;
 	std::string id;
 };

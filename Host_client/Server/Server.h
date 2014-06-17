@@ -12,6 +12,13 @@ enum PACKET_ID
 	TURN_UPDATE,
 };
 
+enum SELECTION_AREA
+{
+	NOTHING,
+	TABLE_PILE,
+	SECONDARY_CARDS,
+};
+
 class Server
 {
 public:
@@ -28,6 +35,7 @@ private:
 	Dealer _dealer;
 	std::vector<sf::TcpSocket*> _clients;
 	std::vector<Player> _players;
+	std::vector<PlayArea> _playAreas;
 	sf::Uint16 _packetID;
 	sf::Packet _packet;
 	int _port;

@@ -22,6 +22,13 @@ friend sf::Packet& operator >>(sf::Packet& packet, Card& Card)
     return packet >> Card.value >> Card.suit;
 }
 
+friend bool operator ==(Card &card1, Card &card2)
+{
+	if(card1.suit == card2.suit && card1.value == card2.value)
+		return true;
+	return false;
+}
+
 public:
 	Card(int v, int s) : value(v), suit(s){}
 	Card(){}

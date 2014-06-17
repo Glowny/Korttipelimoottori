@@ -15,11 +15,11 @@ public:
 	void drawTable();
 	void removeFromTable(std::string player,Hand h);
 	void addPlayer(std::string player);
+	std::vector<sf::FloatRect> getAreas();
 
 private:
 	std::vector<std::string>_players;
 	std::vector<TableArea>_tableAreas;
 	sf::RenderWindow &_window;
-
 };
 

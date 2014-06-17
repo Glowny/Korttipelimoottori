@@ -6,7 +6,6 @@ Server::Server(void)
 	_port = 2000;
 	_listener.listen(_port);
 	_selector.add(_listener);
-
 }
 
 
@@ -41,6 +40,10 @@ void Server::initialize()
 				connections++;
 			}
 		}
+	}
+	for(int i = 0; i <= _playerCount; i++)
+	{
+		_playAreas.push_back(PlayArea());
 	}
 
 }
@@ -149,19 +152,33 @@ void Server::run()
 					if(_clients[i]->receive(_packet) == sf::Socket::Done)
 					{
 						//otetaan vastaan pelatut kortit pelaajalta
-						std::cout<<"Received packet from "<<_players[i].getID()<<std::endl;
+						std::cout<<"Received packet from "<<_players[i].getID()<<" --- ";
 						Hand receivedHand;
-						_packet >> receivedHand;
+						sf::Uint16 area;
+						_packet >> area >> receivedHand;
+
+						_players[i].removeCards(receivedHand);
+						if(area == SECONDARY_CARDS)
+						{
+							_playAreas[i].addCards(receivedHand);
+							std::cout<<"Added to the player's SECONDARY_CARDS:"<<std::endl;
+						}
+						else if(area == TABLE_PILE)
+						{
+							_playAreas[_playerCount].addCards(receivedHand);
+							std::cout<<"Added to TABLE_PILE:"<<std::endl;
+						}
 
 						for(int i=0; i<receivedHand.hand.size(); i++)
 						{
 							std::cout<<receivedHand.hand[i].suit<<" "<<receivedHand.hand[i].value<<std::endl;
 						}
+
 								
 						//lähetetään muille pelaajille pelaajan x pelatut kortit
 						_packet.clear();
 						_packetID = TABLE_UPDATE;
-						_packet << _packetID << receivedHand;
+						_packet << _packetID << area << receivedHand;
 						for(int j = 0; j < _clients.size(); j++)
 						{
 							if(i != j)

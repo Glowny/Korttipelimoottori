@@ -3,7 +3,6 @@
 
 UserInterface::UserInterface(sf::RenderWindow &window):_window(window)
 {
- 
 	_cardFont = new sf::Font;
 	float width = _window.getSize().x;
 	float height = _window.getSize().y;
@@ -13,6 +12,7 @@ UserInterface::UserInterface(sf::RenderWindow &window):_window(window)
 	_cardFont->loadFromFile("comic.ttf");
 	_cardArea = (sf::FloatRect(0,height*0.75f,
 		width*0.75f,height*0.25f));
+	_selectedArea = NOTHING;
 
 	_buttonArea = (sf::FloatRect(width*0.75f,height*0.75f,
 		width*0.25f,height*0.25f));
@@ -25,6 +25,16 @@ UserInterface::~UserInterface(void)
 
 }
 
+void UserInterface::init(std::vector<sf::FloatRect> areas)
+{
+	for(int i = 0; i < areas.size();i++)
+	{
+	_borders.push_back(sf::RectangleShape(sf::Vector2f(areas[i].width,areas[i].height)));
+	_borders[i].setFillColor(sf::Color::Transparent);
+	_borders[i].setOutlineThickness(1.0f);
+	_borders[i].setPosition(areas[i].left,areas[i].top);
+	}
+}
 
 bool UserInterface::checkInput()
 {
@@ -45,6 +55,20 @@ bool UserInterface::checkInput()
 		case sf::Event::MouseButtonPressed:
 			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
+				if(_borders[0].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
+				{
+					_borders[4].setFillColor(sf::Color::Transparent);
+					_borders[0].setFillColor(sf::Color(50,50,50,50));
+					_selectedArea = SECONDARY_CARDS;
+				}
+				
+				if(_borders[4].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
+				{
+					_borders[0].setFillColor(sf::Color::Transparent);
+					_borders[4].setFillColor(sf::Color(50,50,50,50));
+					_selectedArea = TABLE_PILE;
+				}
+
 				std::cout << "something happens";
 				for(int i = 0; i < _cardObjects.size();i++)
 				{
@@ -54,8 +78,10 @@ bool UserInterface::checkInput()
 
 				if(_buttons[0].getArea().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
 				{
-					std::cout << "plaaksd";
-					ready = true;
+					if(_selectedArea == NOTHING)
+						_popUps.push_back(PopUp(*_cardFont,"Select Area!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
+					else
+						ready = true;
 				}
 			}
 			break;
@@ -166,6 +192,11 @@ void UserInterface::lineUpButtons()
 
 void UserInterface::draw()
 {
+	for(int i = 0;i < _borders.size();i++)
+	{
+		_window.draw(_borders[i]);
+	}
+
 	for(int i = 0; i < _cardObjects.size(); i++)
 	{
 		_cardObjects[i].draw(_window);
@@ -173,5 +204,11 @@ void UserInterface::draw()
 	for(int i = 0; i < _buttons.size(); i++)
 	{
 		_buttons[i].draw(_window);
+	}
+
+	for(int i = 0; i <_popUps.size(); i++)
+	{
+		if(_popUps[i].draw(_window))
+			_popUps.erase(_popUps.begin()+i);
 	}
 }
