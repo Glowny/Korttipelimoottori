@@ -29,7 +29,10 @@ void TableArea::lineUp()
 		{
 			_cardObjects[i].setPosition(sf::Vector2f(_area.left+i*width,_area.top));
 			if(_area.top == 0)
+			{
 				_cardObjects[i].setRotation(180);
+				_cardObjects[i].setPosition(sf::Vector2f(_area.left+i*width,(_area.top+_cardObjects[i].getArea().height)));
+			}
 		}
 		
 	}
@@ -39,11 +42,19 @@ void TableArea::lineUp()
 
 		for(int i = 0; i < _cardObjects.size();i++)
 		{
-			_cardObjects[i].setPosition(sf::Vector2f(_area.left+width,_area.top+i*height));
+			
 			if(_area.left == 0)
+				{
 				_cardObjects[i].setRotation(90);
+				_cardObjects[i].setPosition(sf::Vector2f(_area.left+width,_area.top+i*height));
+				
+				}
 			else
+			{
 				_cardObjects[i].setRotation(270);
+				_cardObjects[i].setPosition(sf::Vector2f(_area.left,_area.top+i*height));
+				
+			}
 		}
 	}
 	}
@@ -83,8 +94,13 @@ void TableArea::removeCards(Hand cards)
 	lineUp();
 }
 
-void TableArea::addCards(Hand cards)
+void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 {
+
+	sf::Vector2f cardSize = sf::Vector2f(window.getSize().x,window.getSize().y);
+	cardSize.x*=0.075f;
+	cardSize.y*=0.15f;
+
 	for(int i = 0; i < cards.hand.size();i++)
 	{
 		_cardObjects.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
@@ -94,10 +110,12 @@ void TableArea::addCards(Hand cards)
 	{
 
 	if(_area.width > _area.height)
-	_cardObjects[i].setSize(sf::Vector2f(_area.height*0.5f,_area.height));
+	{
+	_cardObjects[i].setSize(cardSize);
+	}
 
 	else
-	_cardObjects[i].setSize(sf::Vector2f(_area.width*0.5f,_area.width));
+	_cardObjects[i].setSize(cardSize);
 	}
 
 	lineUp();

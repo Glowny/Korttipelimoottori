@@ -3,10 +3,10 @@
 #include <iostream>
 enum Suit
 {
-	Hearts,
-	Diamonds,
-	Clubs,
-	Spades,
+	HEARTS,
+	DIAMONDS,
+	CLUBS,
+	SPADES,
 };
 
 class Card

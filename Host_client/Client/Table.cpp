@@ -18,7 +18,7 @@ void Table::addToTable(std::string player,Hand h)
 	{
 		if(player == _players[i])
 		{
-			_tableAreas[i].addCards(h);
+			_tableAreas[i].addCards(h,_window);
 		}
 	}
 }

@@ -8,7 +8,7 @@ class TableArea
 public:
 	TableArea(sf::FloatRect area);
 	~TableArea(void);
-	void addCards(Hand cards);
+	void addCards(Hand cards, sf::RenderWindow &window);
 	void removeCards(Hand cards);
 	void draw(sf::RenderWindow &window);
 private:

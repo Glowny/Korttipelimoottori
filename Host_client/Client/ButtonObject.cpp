@@ -7,6 +7,7 @@ ButtonObject::ButtonObject(sf::Font font,std::string string)
 	*_font = font;
 	_text.setFont(*_font);
 	_text.setString(string);
+	_text.setColor(sf::Color::Black);
 }
 
 ButtonObject::ButtonObject(sf::Font font,std::string string, sf::Texture texture)
@@ -16,6 +17,7 @@ ButtonObject::ButtonObject(sf::Font font,std::string string, sf::Texture texture
 	_text.setFont(*_font);
 	_text.setString(string);
 	_sprite.setTexture(texture);
+	_text.setColor(sf::Color::Black);
 }
 
 ButtonObject::~ButtonObject(void)
@@ -34,7 +36,7 @@ void ButtonObject::draw(sf::RenderWindow &window)
 
 void ButtonObject::setPosition(sf::Vector2f position)
 {
-	_text.setOrigin(_text.getGlobalBounds().width, _text.getGlobalBounds().height);
+	_text.setOrigin(_text.getGlobalBounds().width*0.5f, _text.getGlobalBounds().height*0.5f);
 
 	if(_sprite.getTexture() != NULL)
 	{

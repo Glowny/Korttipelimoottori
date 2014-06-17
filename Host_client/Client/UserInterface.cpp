@@ -160,7 +160,7 @@ void UserInterface::lineUpButtons()
 
 	for(int i = 0; i < _buttons.size(); i++)
 	{
-		_buttons[i].setPosition(sf::Vector2f(_buttonArea.left+width*0.5f,_buttonArea.top+i*height));
+		_buttons[i].setPosition(sf::Vector2f(_buttonArea.left,_buttonArea.top+i*height));
 	}
 }
 
