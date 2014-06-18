@@ -63,6 +63,8 @@ void Client::receiver()
 
 	_UI.checkInput();
 
+	std::vector<int> allowedAreas;
+
 	switch (_packetID)
 	{
 
@@ -71,7 +73,9 @@ void Client::receiver()
 
 			//Otetaan vastaan alkukäsi ja muut pelaajat.
 		case GAME_START:
-			_packet>>_tempHand>>_playerCount;
+			sf::Uint16 _mptype;
+
+			_packet>>_tempHand>>_mptype>>_playerCount;
 
 			for(int i = 0; i < _playerCount; i++)
 			{
@@ -81,6 +85,7 @@ void Client::receiver()
 				if(tempText.size() > 0)
 				_table.addPlayer(tempText);
 			}
+			_UI.setMultiplayType(_mptype);
 
 			_UI.addCards(_tempHand);
 
@@ -95,6 +100,29 @@ void Client::receiver()
 			//Pelataan vuoro ja lähetetään pelatut kortit.
 		case CARD_PLAY:
 
+			sf::Uint16 allowedAreasCount, cardLimit;
+
+			_packet>>allowedAreasCount;
+
+			for(int i = 0; i < allowedAreasCount; i++)
+			{
+				sf::Uint16 tempArea;
+				_packet>>tempArea;
+				allowedAreas.push_back(tempArea);
+			}
+
+			_UI.setAllowedAreas(allowedAreas);
+
+			_packet>>cardLimit;
+
+			_UI.setCardLimit(cardLimit);
+
+			_tempHand.hand.clear();
+
+			_packet>>_tempHand;
+
+			_UI.setPlayableCards(_tempHand);
+
 			_tempHand.hand.clear();
 
 			while(!_UI.checkInput())
@@ -103,6 +131,8 @@ void Client::receiver()
 
 			}
 			_tempHand = _UI.getSelected();
+
+			_UI.removeCards(_tempHand);
 
 			_currentArea = NOTHING;
 
@@ -115,7 +145,7 @@ void Client::receiver()
 			_socket.send(_packet);
 			if(_currentArea == SECONDARY_CARDS)
 				_table.addToTable(_id, _tempHand);
-			else if(_currentArea == TABLE_PILE)
+			else if(_currentArea == TABLE_CENTER)
 				_table.addToTable("", _tempHand);
 
 			break;
@@ -132,7 +162,7 @@ void Client::receiver()
 				std::cout<<_currentPlayer<<" plays: "<<_tempHand.hand[0].suit<<" "<<_tempHand.hand[0].value<<std::endl;
 			if(_currentArea == SECONDARY_CARDS)
 				_table.addToTable(_currentPlayer, _tempHand);
-			else if(_currentArea == TABLE_PILE)
+			else if(_currentArea == TABLE_CENTER)
 				_table.addToTable("",_tempHand);
 
 			break;
@@ -144,6 +174,23 @@ void Client::receiver()
 			_packet>>_currentPlayer;
 			
 			std::cout<<_currentPlayer<<" turn"<<std::endl;
+
+			break;
+
+			//Saadan tieto voittajasta sekä halutut viestit
+		case END:
+			std::string temp1,temp2;
+
+			bool victory;
+
+			_packet>>temp1>>temp2;
+
+			if(temp1 == _id)
+				victory = true;
+			else
+				victory = false;
+
+			_UI.endScreen(temp1,temp2,victory);
 
 			break;
 		}

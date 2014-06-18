@@ -8,8 +8,15 @@
 enum SELECTION_AREA
 {
 	NOTHING,
-	TABLE_PILE,
+	TABLE_CENTER,
 	SECONDARY_CARDS,
+};
+
+enum MULTIPLAY_TYPE
+{
+	NO_MULTIPLAY,
+	SAME_VALUE,
+	SAME_SUIT,
 };
 
 class UserInterface
@@ -27,6 +34,11 @@ public:
 	Hand getSelected();
 	int getSelectedArea(){return _selectedArea;}
 	void init(std::vector<sf::FloatRect>areas);
+	void setMultiplayType(int type){_mptype = type;}
+	void setAllowedAreas(std::vector<int>areas){_allowedAreas = areas;}
+	void setCardLimit(int limit){_cardLimit = limit;}
+	void setPlayableCards(Hand h){_playableCards = h;}
+	void endScreen(std::string player,std::string message,bool victory);
 private:
 	int _selectedArea;
 	void lineUpCards();
@@ -40,4 +52,8 @@ private:
 	sf::FloatRect _cardArea,_buttonArea;
 	std::vector<sf::RectangleShape> _borders;
 	std::vector<PopUp> _popUps;
+	int _mptype;
+	std::vector<int>_allowedAreas;
+	int _cardLimit;
+	Hand _playableCards;
 };

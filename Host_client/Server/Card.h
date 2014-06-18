@@ -29,6 +29,13 @@ friend bool operator ==(Card &card1, Card &card2)
 	return false;
 }
 
+friend bool operator !=(Card &card1, Card &card2)
+{
+	if(card1 == card2)
+		return false;
+	return true;
+}
+
 public:
 	Card(int v, int s) : value(v), suit(s){}
 	Card(){}

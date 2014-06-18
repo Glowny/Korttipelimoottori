@@ -6,15 +6,14 @@ Server::Server(void)
 	_port = 2000;
 	_listener.listen(_port);
 	_selector.add(_listener);
+	_mptype = NO_MULTIPLAY;
 }
 
-
-void Server::initialize()
+void Server::initialize(int playercount)
 {
 	std::cout << "Initializing server.." << std::endl;
 	int connections = 0;
-	std::cout<<"Enter the number of players: ";
-	std::cin>>_playerCount;
+	_playerCount = playercount;
 	
 	std::cout << "Waiting for connections.." <<std::endl;
 	while(connections < _playerCount)
@@ -97,10 +96,10 @@ void Server::setUp(int startingHand)
 		{
 			_players[i].setHand(_dealer.deal(startingHand));
 			_packetID = GAME_START;
-			sf::Uint16 otherPlayers = _playerCount-1;
+			sf::Uint16 otherPlayers = _playerCount-1, mptype = _mptype;
 
 			_packet.clear();
-			_packet<<_packetID<<_players[i].getHand()<<otherPlayers;
+			_packet<<_packetID<<_players[i].getHand()<<mptype<<otherPlayers;
 
 
 			//L‰hetet‰‰n toisten pelaajien IDt pelaajille
@@ -114,17 +113,33 @@ void Server::setUp(int startingHand)
 			//muiden pelaajien IDt
 			_clients[i]->send(_packet);
 		}
+		_currentPlayer = _players[0];
 }
 
 void Server::run()
 {
 	for(int i = 0; i < _clients.size();)
 		{
-			//L‰hetet‰‰n pelaajalle, jonka vuoro on, ett‰ sun vuoro on
+			//L‰hetet‰‰n pelaajalle, jonka vuoro on, ett‰ sun vuoro on, sek‰ sallitut pelialueet ja kortit joita on mahdollista pelata ja pelattavien korttien m‰‰r‰
 			_packet.clear();
 			_packetID = CARD_PLAY;
 			_packet<<_packetID;
+
+			sf::Uint16 allowedAreasAmount = _allowedAreas.size();
+
+			_packet<<allowedAreasAmount;
+			
+
+			for(int i = 0; i < _allowedAreas.size(); i++)
+			{
+				sf::Uint16 tempArea = _allowedAreas[i];
+				_packet<<tempArea;
+			}
+
+			_packet<<_cardLimit<<_tempHand;
+
 			_clients[i]->send(_packet);
+			_currentPlayer = _players[i];
 
 			//L‰hetet‰‰n muille, joiden vuoro ei ole, ett‰ sun vuoro ei ole
 			//ja ett‰ kenen vuoro se nyt on
@@ -163,7 +178,7 @@ void Server::run()
 							_playAreas[i].addCards(receivedHand);
 							std::cout<<"Added to the player's SECONDARY_CARDS:"<<std::endl;
 						}
-						else if(area == TABLE_PILE)
+						else if(area == TABLE_CENTER)
 						{
 							_playAreas[_playerCount].addCards(receivedHand);
 							std::cout<<"Added to TABLE_PILE:"<<std::endl;
@@ -193,6 +208,46 @@ void Server::run()
 		
 			}
 			
+		}
+}
+
+Card Server::getTopCard(SELECTION_AREA area)
+{
+	if(area == TABLE_CENTER)
+		return _playAreas[_playerCount].getTopCard();
+	else if(area == SECONDARY_CARDS)
+	{
+		for(int i = 0; i < _playerCount; i++)
+		{
+			if(_players[i] == _currentPlayer)
+				return _playAreas[i].getTopCard();
+		}
+
+	}
+		
+}
+
+void Server::setPlayableCards(SELECTION_AREA area, int cardlimit, Hand cards)
+{
+	_allowedAreas.push_back(area);
+	_cardLimit = cardlimit;
+	_tempHand.hand.clear();
+	_tempHand = cards;
+}
+
+void Server::winner()
+{
+	_packet.clear();
+
+	_packetID = END;
+
+	std::string message = ":D:D:D:D::DDDD";
+
+	_packet<<_packetID<<_currentPlayer.getID()<<message;
+
+	for(int i = 0; i < _clients.size(); i++)
+		{
+			_clients[i]->send(_packet);
 		}
 }
 

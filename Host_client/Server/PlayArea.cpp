@@ -10,6 +10,15 @@ PlayArea::~PlayArea(void)
 {
 }
 
+Card PlayArea::getTopCard()
+{
+	if(hand.hand.size() != 0)
+		return hand.hand[hand.hand.size()-1];
+	else
+		std::cout<<"ERROR! NO CARDS IN AREA!"<<std::endl;
+	return Card();
+}
+
 Hand PlayArea::getHand()
 {
 	return hand;

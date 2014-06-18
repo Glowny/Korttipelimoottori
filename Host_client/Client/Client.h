@@ -15,6 +15,7 @@ enum PACKET_ID
 	CARD_PLAY,
 	TABLE_UPDATE,
 	TURN_UPDATE,
+	END,
 };
 
 class Client
