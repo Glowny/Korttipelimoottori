@@ -1,0 +1,39 @@
+//UI.h
+void endScreen(std::string player,std::string message,bool victory);
+
+
+//UI.cpp
+void UserInterface::endScreen(std::string player,std::string message,bool victory)
+{
+	
+	std::string temp;
+
+	if(victory)
+	{
+		temp = "YOU WIN THE GAME!";
+		_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5f-100,_window.getSize().y*0.5f-50),sf::Vector2f(200,100),5));
+	}
+
+	else
+	{
+	  temp = player;
+	 	temp+=" WINS THE GAME!";
+		_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5f-100,_window.getSize().y*0.5f-50),sf::Vector2f(200,100),5));
+	}
+}
+
+//Client.cpp
+
+case END:
+		std::string temp1,temp2;
+
+		bool victory;
+
+		_packet>>temp1>>temp2;
+
+		if(temp1 == _id)
+			victory = true;
+		else
+			victory = false;
+
+		_UI.endScreen(temp1,temp2,victory);
