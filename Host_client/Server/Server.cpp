@@ -116,10 +116,16 @@ void Server::setUp(int startingHand)
 		_currentPlayer = _players[0];
 }
 
-void Server::run()
+void Server::processTurn()
 {
-	for(int i = 0; i < _clients.size();)
-		{
+	int cpIndex;
+
+	for(int i = 0; i < _players.size(); i++)
+	{
+		if(_players[i] == _currentPlayer)
+			cpIndex = i;
+	}
+
 			//L‰hetet‰‰n pelaajalle, jonka vuoro on, ett‰ sun vuoro on, sek‰ sallitut pelialueet ja kortit joita on mahdollista pelata ja pelattavien korttien m‰‰r‰
 			_packet.clear();
 			_packetID = CARD_PLAY;
@@ -138,44 +144,44 @@ void Server::run()
 
 			_packet<<_cardLimit<<_tempHand;
 
-			_clients[i]->send(_packet);
-			_currentPlayer = _players[i];
+			_clients[cpIndex]->send(_packet);
+			_currentPlayer = _players[cpIndex];
 
 			//L‰hetet‰‰n muille, joiden vuoro ei ole, ett‰ sun vuoro ei ole
 			//ja ett‰ kenen vuoro se nyt on
 			_packet.clear();
 			_packetID = TURN_UPDATE;
-			_packet<<_packetID<<_players[i].getID();
+			_packet<<_packetID<<_players[cpIndex].getID();
 
 			for(int j = 0; j < _clients.size(); j++)
 			{
-				if(i != j)
+				if(cpIndex != j)
 					_clients[j]->send(_packet);
 			}
 			
-			std::cout<<_players[i].getID()<<" turn"<<std::endl;
+			std::cout<<_players[cpIndex].getID()<<" turn"<<std::endl;
 				
 
 			//Venaa sit‰ kenen vuoro on, ett‰ tulee kamaa rˆˆriin
 			if(_selector.wait())
 			{
 
-				if(_selector.isReady(*_clients[i]))
+				if(_selector.isReady(*_clients[cpIndex]))
 				{
 
 					_packet.clear();
-					if(_clients[i]->receive(_packet) == sf::Socket::Done)
+					if(_clients[cpIndex]->receive(_packet) == sf::Socket::Done)
 					{
 						//otetaan vastaan pelatut kortit pelaajalta
-						std::cout<<"Received packet from "<<_players[i].getID()<<" --- ";
+						std::cout<<"Received packet from "<<_players[cpIndex].getID()<<" --- ";
 						Hand receivedHand;
 						sf::Uint16 area;
 						_packet >> area >> receivedHand;
 
-						_players[i].removeCards(receivedHand);
+						_players[cpIndex].removeCards(receivedHand);
 						if(area == SECONDARY_CARDS)
 						{
-							_playAreas[i].addCards(receivedHand);
+							_playAreas[cpIndex].addCards(receivedHand);
 							std::cout<<"Added to the player's SECONDARY_CARDS:"<<std::endl;
 						}
 						else if(area == TABLE_CENTER)
@@ -196,19 +202,16 @@ void Server::run()
 						_packet << _packetID << area << receivedHand;
 						for(int j = 0; j < _clients.size(); j++)
 						{
-							if(i != j)
+							if(cpIndex != j)
 								_clients[j]->send(_packet);
 						}
-
-						i++;
 					}
 					else
 					reset();
 				}
 		
 			}
-			
-		}
+			_currentPlayer = getNextPlayer();
 }
 
 Card Server::getTopCard(SELECTION_AREA area)
@@ -249,6 +252,42 @@ void Server::winner()
 		{
 			_clients[i]->send(_packet);
 		}
+}
+
+Player Server::getNextPlayer()
+{
+	Player tempPlayer;
+
+	for(int i = 0; i < _players.size(); i++)
+	{
+		if(_players[i] == _currentPlayer)
+		{
+			if(i+1 == _players.size())
+				tempPlayer = _players[0];
+			else
+				tempPlayer = _players[i+1];
+		}
+	}
+
+	return tempPlayer;
+}
+
+Player Server::getPreviousPlayer()
+{
+	Player tempPlayer;
+
+	for(int i = 0; i < _players.size(); i++)
+	{
+		if(_players[i] == _currentPlayer)
+		{
+			if(i-1 < 0)
+				tempPlayer = _players[_players.size()-1];
+			else
+				tempPlayer = _players[i-1];
+		}
+	}
+
+	return tempPlayer;
 }
 
 

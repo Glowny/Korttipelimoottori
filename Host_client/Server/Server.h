@@ -34,7 +34,7 @@ public:
 	~Server(void);
 	void initialize(int playercount);
 	void setUp(int startingHand);
-	void run();
+	void processTurn();
 	void reset();
 	Card getTopCard(SELECTION_AREA area);
 	Hand getPlayerHand(int playerNumber){return _players[playerNumber].getHand();}
@@ -44,6 +44,8 @@ public:
 	void winner(std::string customMessage);
 	std::vector<Player> getPlayers(){return _players;}
 	Player getCurrentPlayer(){return _currentPlayer;}
+	Player getNextPlayer();
+	Player getPreviousPlayer();
 private:
 	sf::Uint16 _playerCount;
 	sf::TcpListener _listener;

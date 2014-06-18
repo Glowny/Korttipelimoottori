@@ -20,7 +20,7 @@ int main()
 
 	bool gameOn = true, clear = true;
 
-	Hand currentPlayerHand, nextPlayerHand;
+	Hand currentPlayerHand;
 
 	Card lastPlayed;
 
@@ -28,14 +28,14 @@ int main()
 
 	while(gameOn)
 	{
-		server.run();
+		currentPlayerHand = server.getCurrentPlayer().getHand();
 
 		Card topCard = server.getTopCard(TABLE_CENTER);
 
 		if(topCard.suit != NULL && topCard.value != NULL)
 		{
 			if(lastPlayed != topCard)
-				lastPlayer = server.getCurrentPlayer();
+				lastPlayer = server.getPreviousPlayer();
 		}
 
 		if(server.getCurrentPlayer() == lastPlayer)
@@ -43,44 +43,34 @@ int main()
 
 		lastPlayed = topCard;
 
-		for(int i = 0; i < players.size(); i++)
-		{
-			if(players[i] == server.getCurrentPlayer())
-			{
-				if(i+1 == players.size())
-					nextPlayerHand = players[i+1].getHand();
-				else
-					nextPlayerHand = players[0].getHand();
-			}
-		}
-
-		if(currentPlayerHand.hand.size() == 0)
-		{
-			server.winner();
-			gameOn = false;
-			break;
-		}
-
 		Hand playables;
-		
-		if(!clear)
-		{
-			for(int i = 0; i < nextPlayerHand.hand.size(); i++)
+
+			if(currentPlayerHand.hand.size() == 0)
 			{
-				if(nextPlayerHand.hand[i].value > topCard.value)
-					playables.add(nextPlayerHand.hand[i]);
+				server.winner();
+				gameOn = false;
+				break;
 			}
-		}
-		else
-		{
-			for(int i = 0; i < nextPlayerHand.hand.size(); i++)
+	
+			if(!clear)
 			{
-					playables.add(nextPlayerHand.hand[i]);
+				for(int i = 0; i < currentPlayerHand.hand.size(); i++)
+				{
+					if(currentPlayerHand.hand[i].value > topCard.value)
+						playables.add(currentPlayerHand.hand[i]);
+				}
 			}
-			clear = false;
-		}
+			else
+			{
+				for(int i = 0; i < currentPlayerHand.hand.size(); i++)
+				{
+						playables.add(currentPlayerHand.hand[i]);
+				}
+				clear = false;
+			}
 		server.setPlayableCards(TABLE_CENTER, 1, playables);
 
+		server.processTurn();
 	}
 
 	return 0;
