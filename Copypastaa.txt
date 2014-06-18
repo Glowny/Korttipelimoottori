@@ -11,18 +11,18 @@ void UserInterface::endScreen(std::string player,std::string message,bool victor
 	if(victory)
 	{
 		temp = "YOU WIN THE GAME!";
-		_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5f-100,_window.getSize().y*0.5f-50),sf::Vector2f(200,100),5));
+		_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5f-100,_window.getSize().y*0.5f-50),sf::Vector2f(200,100),60));
 	}
 
 	else
 	{
 	  temp = player;
 	 	temp+=" WINS THE GAME!";
-		_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5f-100,_window.getSize().y*0.5f-50),sf::Vector2f(200,100),5));
+		_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5f-100,_window.getSize().y*0.5f-50),sf::Vector2f(200,100),60));
 	}
 	
 	temp = message;
-	_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5-100,_window.getSize().y*-105),sf::Vector2f(200,100),5));
+	_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5-100,_window.getSize().y*-105),sf::Vector2f(200,100),60));
 }
 
 //Client.cpp
