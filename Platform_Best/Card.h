@@ -1,0 +1,47 @@
+#pragma once
+#include <SFML/Network.hpp>
+#include <iostream>
+enum Suit
+{
+	Hearts,
+	Diamonds,
+	Clubs,
+	Spades,
+};
+
+class Card
+{
+
+friend sf::Packet& operator <<(sf::Packet& packet, const Card& Card)
+{
+    return packet << Card.value << Card.suit;
+}
+
+friend sf::Packet& operator >>(sf::Packet& packet, Card& Card)
+{
+    return packet >> Card.value >> Card.suit;
+}
+
+friend bool operator ==(Card &card1, Card &card2)
+{
+	if(card1.suit == card2.suit && card1.value == card2.value)
+		return true;
+	return false;
+}
+
+friend bool operator !=(Card &card1, Card &card2)
+{
+	if(card1 == card2)
+		return false;
+	return true;
+}
+
+public:
+	Card(int v, int s) : value(v), suit(s){faceUp = false;}
+	Card(int v, int s, bool f) : value(v), suit(s), faceUp(f){}
+	Card(){}
+	/*~Card(void);*/
+sf::Uint16 value;
+sf::Uint16 suit;
+bool faceUp;
+};
