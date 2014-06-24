@@ -5,6 +5,7 @@
 enum PACKET_ID
 {
 	WAIT,
+	START,
 	CARDS,
 	MESSAGE,
 	TURN,
