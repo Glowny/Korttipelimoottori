@@ -1,7 +1,7 @@
 #include "Client.h"
 
 
-Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(window)
+Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(window, _table)
 {
 	_window.setActive(false);
 	_window.setVisible(false);
@@ -19,8 +19,6 @@ void Client::initialize()
 	std::cout<<_ip.toString()<<std::endl;
 	_id = _startScreen.getID();
 	_window.setTitle(_id);
-
-	_table.addPlayer(_id);
 
 	_socket.connect(_ip, _port);
 
@@ -73,9 +71,10 @@ void Client::receiver()
 
 			//Otetaan vastaan alkukäsi ja muut pelaajat.
 		case START:
-			sf::Uint16 _mptype;
 
-			_packet>>_tempCardPacket>>_mptype>>_playerCount;
+			_tempHand.hand.clear();
+
+			_packet>>_tempHand>>_playerCount;
 
 			for(int i = 0; i < _playerCount; i++)
 			{
@@ -85,68 +84,42 @@ void Client::receiver()
 				if(tempText.size() > 0)
 				_table.addPlayer(tempText);
 			}
-			_UI.setMultiplayType(_mptype);
 
-			_UI.addCards(_tempCardPacket._cards);
+			_UI.addCards(_tempHand);
 
 			std::cout<<"Your hand:"<<std::endl;
 
-			for(int i=0; i<_tempCardPacket._cards.hand.size(); i++)
+			for(int i=0; i<_tempHand.hand.size(); i++)
 			{
-				std::cout<<_tempCardPacket._cards[i].suit<<" "<<_tempCardPacket._cards[i].value<<std::endl;
+				std::cout<<_tempHand.hand[i].suit<<" "<<_tempHand.hand[i].value<<std::endl;
 			}
+
+			std::cout<<"Tota cards: "<<_tempHand.hand.size()<<std::endl;
 			break;
 
 			//Pelataan vuoro ja lähetetään pelatut kortit.
 		case TURN:
 
-			sf::Uint16 allowedAreasCount, cardLimit;
-
-			_packet>>allowedAreasCount;
-
-			for(int i = 0; i < allowedAreasCount; i++)
-			{
-				sf::Uint16 tempArea;
-				_packet>>tempArea;
-				allowedAreas.push_back(tempArea);
-			}
-
-			_UI.setAllowedAreas(allowedAreas);
-
-			_packet>>cardLimit;
-
-			_UI.setCardLimit(cardLimit);
-
-			_tempCardPacket._cards.clear();
-
-			_packet>>_tempCardPacket;
-
-			_UI.setPlayableCards(_tempCardPacket);
-
-			_tempCardPacket._cards.clear();
+			_tempCardPacket._cards.hand.clear();
 
 			while(!_UI.checkInput())
 			{
 				draw();
 
 			}
-			_tempCardPacket = _UI.getSelected();
+			_tempCardPacket._cards = _UI.getSelected();
 
-			_UI.removeCards(_tempCardPacket);
+			_UI.removeCards(_tempCardPacket._cards);
 
-			_currentArea = NOTHING;
+			_tempCardPacket._area = NOTHING;
 
-			_currentArea = _UI.getSelectedArea();
+			_tempCardPacket._area = _UI.getSelectedArea();
 
 			_packet.clear();
 
-			_packet<<_currentArea<<_tempCardPacket;
+			_packet<<_tempCardPacket;
 
 			_socket.send(_packet);
-			if(_currentArea == SECONDARY_CARDS)
-				_table.addToTable(_id, _tempCardPacket);
-			else if(_currentArea == TABLE_CENTER)
-				_table.addToTable("", _tempCardPacket);
 
 			break;
 
@@ -157,11 +130,13 @@ void Client::receiver()
 			_packet>>_tempCardPacket;
 
 			if(_tempCardPacket._cards.hand.size()>0)
+			{
 				std::cout<<_currentPlayer<<" plays: "<<_tempCardPacket._cards.hand[0].suit<<" "<<_tempCardPacket._cards.hand[0].value<<std::endl;
-			if(_tempCardPacket._area == 0)
-				_table.addToTable("",_tempCardPacket._cards);
-			else
-				_table.addToTable(_table.getPlayers()[_tempCardPacket._area], _tempCardPacket._cards);
+				if(_tempCardPacket._area == TABLE_CENTER)
+					_table.addToTable("",_tempCardPacket._cards);
+				else
+					_table.addToTable(_table.getPlayers()[0], _tempCardPacket._cards);
+			}
 
 			break;
 

@@ -19,6 +19,7 @@ public:
 	void removeCards(Hand cards);
 	void draw(sf::RenderWindow &window);
 	sf::FloatRect _area;
+	Hand getCards();
 private:
 	LINEUP_STYLE _style;
 	void lineUp();

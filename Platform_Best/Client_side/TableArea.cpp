@@ -172,6 +172,18 @@ void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 	lineUp();
 }
 
+Hand TableArea::getCards()
+{
+	Hand tempH;
+
+	for(int i = 0; i < _cardObjects.size(); i++)
+	{
+		tempH.hand.push_back(Card(_cardObjects[i].value, _cardObjects[i].suit));
+	}
+
+	return tempH;
+}
+
 TableArea::~TableArea(void)
 {
 

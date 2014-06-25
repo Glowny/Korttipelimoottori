@@ -1,7 +1,7 @@
 #include "UserInterface.h"
+#include "chekkeri.h"
 
-
-UserInterface::UserInterface(sf::RenderWindow &window):_window(window)
+UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(window), _table(table)
 {
 	_cardFont = new sf::Font;
 	float width = _window.getSize().x;
@@ -55,34 +55,28 @@ bool UserInterface::checkInput()
 		case sf::Event::MouseButtonPressed:
 			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
-				for(int i = 0; i < _allowedAreas.size(); i++)
+				if(_borders[0].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
 				{
-					if(_allowedAreas[i] == SECONDARY_CARDS)
-					{
-						if(_borders[0].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-						{
-							_borders[4].setFillColor(sf::Color::Transparent);
-							_borders[0].setFillColor(sf::Color(50,50,50,50));
-							_selectedArea = SECONDARY_CARDS;
-						}
-					}
-				
-					if(_allowedAreas[i] == TABLE_CENTER)
-					{
-						if(_borders[4].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-						{
-							_borders[0].setFillColor(sf::Color::Transparent);
-							_borders[4].setFillColor(sf::Color(50,50,50,50));
-							_selectedArea = TABLE_CENTER;
-						}
-					}
+					_borders[1].setFillColor(sf::Color::Transparent);
+					_borders[0].setFillColor(sf::Color(50,50,50,50));
+					_selectedArea = TABLE_CENTER;
 				}
+
+				if(_borders[1].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
+				{
+					_borders[0].setFillColor(sf::Color::Transparent);
+					_borders[1].setFillColor(sf::Color(50,50,50,50));
+					_selectedArea = SECONDARY_CARDS;
+				}
+
 				std::cout << "something happens";
+
 				for(int i = 0; i < _cardObjects.size();i++)
 				{
 					if(_cardObjects[i].getArea().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
 					{
-						cardClick(_cardObjects[i]);
+						if(check(Card(_cardObjects[i].value, _cardObjects[i].suit),_cards,_table))
+							_cardObjects[i].select();
 					}
 				}
 
@@ -115,6 +109,7 @@ void UserInterface::removeCards(Hand cards)
 				std::cout << "Deleted: " << _cardObjects[i].suit << std::endl
 						<<	_cardObjects[i].value << std::endl;
 				_cardObjects.erase(_cardObjects.begin()+i);
+				_cards.hand.erase(_cards.hand.begin()+i);
 				erased = true;
 			}
 		}
@@ -129,6 +124,7 @@ void UserInterface::addCards(Hand cards)
 	for(int i = 0; i < cards.hand.size();i++)
 	{
 		_cardObjects.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
+		_cards.hand.push_back(cards.hand[i]);
 	}
 	for(int i = 0; i < _cardObjects.size(); i++)
 	{
@@ -163,30 +159,6 @@ void UserInterface::lineUpCards()
 	for(int i = 0; i < _cardObjects.size();i++)
 	{
 		_cardObjects[i].setPosition(sf::Vector2f(_cardArea.left+i*width,_cardArea.top));
-	}
-}
-
-void UserInterface::cardClick(CardObject &co)
-{
-	for(int j = 0; j < _playableCards.hand.size();j++)
-	{
-		if(co == _playableCards.hand[j])
-		{
-			if(getSelected().hand.size() >= _cardLimit)
-			{
-				for(int k = 0; k < getSelected().hand.size(); k++)
-				{
-					if(_mptype == SAME_VALUE)
-						if(co.value == getSelected().hand[k].value)
-						{
-							co.select();
-							break;
-						}
-				}
-			}
-			else
-				co.select();
-		}
 	}
 }
 

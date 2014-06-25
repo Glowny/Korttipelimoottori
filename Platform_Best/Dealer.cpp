@@ -17,9 +17,9 @@ void Dealer::initialize()
 {
 	deck.hand.clear();
 
-	for(int i = 1; i < 13; i++)
+	for(int i = 1; i <= 13; i++)
 	{
-		Card h(i, Hearts, false);
+		Card h(i, Hearts);
 		Card d(i, Diamonds);
 		Card c(i, Clubs);
 		Card s(i, Spades);

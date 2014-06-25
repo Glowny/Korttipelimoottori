@@ -22,6 +22,7 @@ public:
 	void send(CardPacket cards);
 	void send(int i, CardPacket cards);
 	void send(int i, std::string message);
+	void send(int i, Hand cards, std::vector<std::string> playerIDs);
 	void giveTurn(int i);
 	CardPacket receive(int i);
 private:

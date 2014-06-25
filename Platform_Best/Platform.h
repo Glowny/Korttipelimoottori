@@ -5,19 +5,23 @@
 class Platform
 {
 public:
-	Platform(void);
+	Platform();
+	Platform(Server &server);
 	~Platform(void);
-	void setUp();
-	void setUp(int startingHandSize);
-	void processTurn();
+	void setUp(int playerAmount);
+	void setUp(int playerAmount,int startingHandSize);
+	CardPacket processTurn();
 	void createArea();
 	void playCards(int i, Hand h);
 	Hand getAreaCards(int i);
 	void removeAreaCards(int i, Hand h);
 	Hand drawCards(int i);
+	Player getPlayer(int i);
+	Player getCurrentPlayer(){return _players[_currentPlayerIndex];}
+
 	
 private:
-	Server _server;
+	Server &_server;
 	Dealer _dealer;
 	std::vector<Player> _players;
 	int _currentPlayerIndex;

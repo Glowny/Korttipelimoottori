@@ -39,5 +39,6 @@ private:
 	sf::Uint16 _playerCount;
 	Table _table;
 	CardPacket _tempCardPacket;
+	Hand _tempHand;
 	UserInterface _UI;
 };
