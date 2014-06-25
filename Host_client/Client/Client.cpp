@@ -3,21 +3,45 @@
 
 Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(window)
 {
+	_font = new sf::Font;
 	_window.setActive(false);
 	_window.setVisible(false);
+	_font->loadFromFile("comic.ttf");
 
 	_port = 2000;
-	initialize();
+
+	_startScreen.run();
+
+	switch(_startScreen.getOption())
+	{
+	case EDITOR:
+		//_editor.setFont(*_font);
+		_editor.initialize();
+		_editor.run();
+		break;
+	case PLAY:
+		initialize();
+		run();
+
+	case HOST:
+		break;
+	}
+
 }
 
 void Client::initialize()
-{
+{	
 	_socket.setBlocking(false);
-	_startScreen.run();
+
 	_ip = _startScreen.getIp();
-	
-	std::cout<<_ip.toString()<<std::endl;
 	_id = _startScreen.getID();
+
+	std::cout<<_ip.toString()<<std::endl;
+
+
+	_window.setActive(true);
+	_window.setVisible(true);
+
 	_window.setTitle(_id);
 
 	_table.addPlayer(_id);
@@ -29,8 +53,6 @@ void Client::initialize()
 	_socket.send(_packet);
 
 	_packet.clear();
-	_window.setActive(true);
-	_window.setVisible(true);
 	_UI.addButton("End Turn");
 	_UI.init(_table.getAreas());
 }
@@ -71,7 +93,7 @@ void Client::receiver()
 	case WAIT:
 		break;
 
-			//Otetaan vastaan alkukäsi ja muut pelaajat.
+			//Otetaan vastaan alkukÃ¤si ja muut pelaajat.
 		case GAME_START:
 			sf::Uint16 _mptype;
 
@@ -97,7 +119,7 @@ void Client::receiver()
 			}
 			break;
 
-			//Pelataan vuoro ja lähetetään pelatut kortit.
+			//Pelataan vuoro ja lÃ¤hetetÃ¤Ã¤n pelatut kortit.
 		case CARD_PLAY:
 
 			sf::Uint16 allowedAreasCount, cardLimit;
@@ -177,7 +199,7 @@ void Client::receiver()
 
 			break;
 
-			//Saadan tieto voittajasta sekä halutut viestit
+			//Saadan tieto voittajasta sekÃ¤ halutut viestit
 		case END:
 			std::string temp1,temp2;
 

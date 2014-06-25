@@ -4,6 +4,7 @@
 #include "Table.h"
 #include "StartScreen.h"
 #include "UserInterface.h"
+#include "Editor.h"
 #include <string>
 #include <iostream>
 #include <vector>
@@ -31,6 +32,7 @@ private:
 	void initialize();
 	void receiver();
 	int _port;
+	sf::Font *_font;
 	sf::IpAddress _ip;
 	std::string _id, _currentPlayer;
 	sf::Packet _packet;
@@ -42,4 +44,5 @@ private:
 	Table _table;
 	Hand _tempHand;
 	UserInterface _UI;
+	Editor _editor;
 };
