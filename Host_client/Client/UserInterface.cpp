@@ -16,7 +16,6 @@ UserInterface::UserInterface(sf::RenderWindow &window):_window(window)
 
 	_buttonArea = (sf::FloatRect(width*0.75f,height*0.75f,
 		width*0.25f,height*0.25f));
-
 }
 
 
@@ -55,6 +54,7 @@ bool UserInterface::checkInput()
 		case sf::Event::MouseButtonPressed:
 			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
+	
 				for(int i = 0; i < _allowedAreas.size(); i++)
 				{
 					if(_allowedAreas[i] == SECONDARY_CARDS)
