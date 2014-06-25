@@ -4,6 +4,7 @@
 #include "ButtonObject.h"
 #include "PopUp.h"
 #include <SFML\Graphics.hpp>
+#include "DropDown.h"
 
 enum SELECTION_AREA
 {
@@ -56,4 +57,5 @@ private:
 	std::vector<int>_allowedAreas;
 	int _cardLimit;
 	Hand _playableCards;
+
 };
