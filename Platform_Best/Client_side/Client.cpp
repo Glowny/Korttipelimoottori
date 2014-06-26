@@ -30,7 +30,6 @@ void Client::initialize()
 	_window.setActive(true);
 	_window.setVisible(true);
 	_UI.addButton("End Turn");
-	_UI.init(_table.getAreas());
 }
 
 void Client::run()
@@ -74,7 +73,9 @@ void Client::receiver()
 
 			_tempHand.hand.clear();
 
-			_packet>>_tempHand>>_playerCount;
+			sf::Uint16 areasAmount;
+
+			_packet>>areasAmount>>_tempHand>>_playerCount;
 
 			for(int i = 0; i < _playerCount; i++)
 			{
@@ -84,6 +85,10 @@ void Client::receiver()
 				if(tempText.size() > 0)
 				_table.addPlayer(tempText);
 			}
+
+			_table.createAreas(areasAmount);
+
+			_UI.init(_table.getAreas());
 
 			_UI.addCards(_tempHand);
 
@@ -101,6 +106,8 @@ void Client::receiver()
 		case TURN:
 
 			_tempCardPacket._cards.hand.clear();
+
+			_UI.popUp("Your turn",1);
 
 			while(!_UI.checkInput())
 			{
@@ -124,15 +131,15 @@ void Client::receiver()
 			break;
 
 			//Otetaan vastaan toisen pelaajan pelatut kortit.
-		case CARDS:
-			_tempCardPacket._cards.hand.clear();
+		case ADD_CARDS:
+			_tempCardPacket._cards.clear();
 
 			_packet>>_tempCardPacket;
 
-			if(_tempCardPacket._cards.hand.size()>0)
+			if(_tempCardPacket._cards.size()>0)
 			{
 				std::cout<<_currentPlayer<<" plays: "<<_tempCardPacket._cards.hand[0].suit<<" "<<_tempCardPacket._cards.hand[0].value<<std::endl;
-				if(_tempCardPacket._area == TABLE_CENTER)
+				if(_tempCardPacket._area == _playerCount)
 					_table.addToTable("",_tempCardPacket._cards);
 				else
 					_table.addToTable(_table.getPlayers()[0], _tempCardPacket._cards);
@@ -140,32 +147,30 @@ void Client::receiver()
 
 			break;
 
-		//	//Saadaan tieto kenen (toisen pelaajan) vuoro on.
-		//case TURN_UPDATE:
-		//	_currentPlayer.clear();
+			//Korvataan pelialueen kortit saaduilla
+		case SET_CARDS:
 
-		//	_packet>>_currentPlayer;
-		//	
-		//	std::cout<<_currentPlayer<<" turn"<<std::endl;
+			_tempCardPacket._cards.clear();
 
-		//	break;
+			_packet>>_tempCardPacket;
 
-		//	//Saadan tieto voittajasta sekä halutut viestit
-		//case END:
-		//	std::string temp1,temp2;
+			if(_tempCardPacket._area == _playerCount)
+				_table.setToTable("", _tempCardPacket._cards);
+			else
+				_table.setToTable(_table.getPlayers()[0],_tempCardPacket._cards);
 
-		//	bool victory;
+			break;
 
-		//	_packet>>temp1>>temp2;
+		//Saadan viestiä
+		case MESSAGE:
 
-		//	if(temp1 == _id)
-		//		victory = true;
-		//	else
-		//		victory = false;
+			std::string temp;
 
-		//	_UI.endScreen(temp1,temp2,victory);
+			_packet>>temp;
 
-		//	break;
+			_UI.popUp(temp,3);
+
+			break;
 		}
 }
 

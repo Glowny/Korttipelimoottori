@@ -11,7 +11,8 @@ enum PACKET_ID
 {
 	WAIT,
 	START,
-	CARDS,
+	ADD_CARDS,
+	SET_CARDS,
 	MESSAGE,
 	TURN,
 };

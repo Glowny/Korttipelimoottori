@@ -17,6 +17,7 @@ public:
 	~TableArea(void);
 	void addCards(Hand cards, sf::RenderWindow &window);
 	void removeCards(Hand cards);
+	void clearArea();
 	void draw(sf::RenderWindow &window);
 	sf::FloatRect _area;
 	Hand getCards();

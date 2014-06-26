@@ -145,6 +145,11 @@ void TableArea::removeCards(Hand cards)
 	lineUp();
 }
 
+void TableArea::clearArea()
+{
+	_cardObjects.clear();
+}
+
 void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 {
 

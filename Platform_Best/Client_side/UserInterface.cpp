@@ -55,18 +55,36 @@ bool UserInterface::checkInput()
 		case sf::Event::MouseButtonPressed:
 			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
-				if(_borders[0].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
+				if(_borders[_borders.size()-1].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
 				{
-					_borders[1].setFillColor(sf::Color::Transparent);
-					_borders[0].setFillColor(sf::Color(50,50,50,50));
-					_selectedArea = TABLE_CENTER;
+					_borders[_borders.size()-1].setFillColor(sf::Color(50,50,50,50));
+					_selectedArea = _borders.size()-1;
+
+					if(_borders.size()>1)
+					{
+						for(int i = 0; i < _borders.size()-1; i++)
+						{
+							_borders[i].setFillColor(sf::Color::Transparent);
+						}
+					}
 				}
 
-				if(_borders[1].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
+				if(_borders.size()>1)
 				{
-					_borders[0].setFillColor(sf::Color::Transparent);
-					_borders[1].setFillColor(sf::Color(50,50,50,50));
-					_selectedArea = SECONDARY_CARDS;
+					for(int i = 0; i < _borders.size(); i++)
+					{
+						if(_borders[i].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
+						{
+							_borders[i].setFillColor(sf::Color(50,50,50,50));
+							_selectedArea = i;
+
+							for(int j = 0; j < _borders.size(); j++)
+							{
+								if(j != i)
+									_borders[j].setFillColor(sf::Color::Transparent);
+							}
+						}
+					}
 				}
 
 				std::cout << "something happens";
@@ -75,7 +93,7 @@ bool UserInterface::checkInput()
 				{
 					if(_cardObjects[i].getArea().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
 					{
-						if(check(Card(_cardObjects[i].value, _cardObjects[i].suit),_cards,_table))
+						if(clickCheck(Card(_cardObjects[i].value, _cardObjects[i].suit),_cards,getSelected(),_table))
 							_cardObjects[i].select();
 					}
 				}
@@ -84,6 +102,8 @@ bool UserInterface::checkInput()
 				{
 					if(_selectedArea == NOTHING)
 						_popUps.push_back(PopUp(*_cardFont,"Select Area!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
+					else if(!turnEndCheck(getSelected(), _table))
+						_popUps.push_back(PopUp(*_cardFont,"Too few cards, man!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
 					else
 						ready = true;
 				}
@@ -142,7 +162,7 @@ Hand UserInterface::getSelected()
 	{
 		if(_cardObjects[i]._selected)
 		{
-			tempHand.add(Card(_cardObjects[i].value,_cardObjects[i].suit));
+			tempHand.push_back(Card(_cardObjects[i].value,_cardObjects[i].suit));
 		}
 	}
 	return tempHand;
@@ -218,6 +238,11 @@ void UserInterface::endScreen(std::string player,std::string message,bool victor
 	std::cout<<temp<<std::endl;
 
 	_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5-100,_window.getSize().y-105),sf::Vector2f(200,100),60));
+}
+
+void UserInterface::popUp(std::string message, int time)
+{
+	_popUps.push_back(PopUp(*_cardFont, message, sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),time));
 }
 
 void UserInterface::draw()

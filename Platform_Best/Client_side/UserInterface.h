@@ -29,6 +29,7 @@ public:
 	int getSelectedArea(){return _selectedArea;}
 	void init(std::vector<sf::FloatRect>areas);
 	void endScreen(std::string player,std::string message,bool victory);
+	void popUp(std::string message, int time);
 private:
 	int _selectedArea;
 	void lineUpCards();
