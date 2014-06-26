@@ -7,14 +7,30 @@ StartScreen::StartScreen(void) : _window(sf::RenderWindow(sf::VideoMode(512,256,
 	sf::Vector2u size(_window.getSize());
 	_textInput.setPosition(size.x*0.5f,size.y*0.75f);
 	_screenText.setPosition(size.x*0.5f,size.y*0.25f);
+	_blockText.setPosition(size.x*0.5f,size.y*0.5f);
+
 	_textInput.setColor(sf::Color::Green);
 	_screenText.setColor(sf::Color::White);
+
 	_font.loadFromFile("comic.ttf");
 	_textInput.setCharacterSize(24);
 	_screenText.setCharacterSize(32);
+	_blockText.setCharacterSize(40);
+
 	_textInput.setFont(_font);
 	_screenText.setFont(_font);
+	_blockText.setFont(_font);
+
+	_LeftBlock = sf::RectangleShape(sf::Vector2f(size.x*0.3333f,size.y*0.5f));
+	_CenterBlock = sf::RectangleShape(sf::Vector2f(size.x*0.3333f,size.y*0.5f));
+	_RightBlock = sf::RectangleShape(sf::Vector2f(size.x*0.3333f,size.y*0.5f));
+
+	_LeftBlock.setPosition(sf::Vector2f(0,size.y*0.5f));
+	_CenterBlock.setPosition(sf::Vector2f(size.x*0.3333f,size.y*0.5f));
+	_RightBlock.setPosition(sf::Vector2f(size.x*0.6666f,size.y*0.5f));
+
 	sf::Mouse::setPosition(sf::Vector2i((_window.getPosition().x+_window.getSize().x*0.5f),(_window.getPosition().y+_window.getSize().y*0.5f)));
+	_option = PLAY;
 }
 
 void StartScreen::askID()
@@ -114,18 +130,119 @@ void StartScreen::askIP()
 
 }
 
+void StartScreen::askWhatYouWannaDo()
+{
+	sf::Event Event;
+
+		_screenText.setString("WhatYouWannaDo?");
+		_screenText.setOrigin(_screenText.getGlobalBounds().width*0.5f,_screenText.getGlobalBounds().height*0.5f);
+		bool done = false;
+		while(!done)
+		{
+		while(_window.pollEvent(Event))
+		{
+			switch(Event.type)
+			{
+			case sf::Event::Closed:
+				_window.close();
+				break;
+			case sf::Event::KeyPressed:
+			
+				if(Event.key.code == sf::Keyboard::Escape)
+					_window.close();
+
+				if(Event.key.code == sf::Keyboard::Left)
+				{
+					if(_option != EDITOR)
+						_option--;
+					else
+						_option = HOST;
+				}
+				if(Event.key.code == sf::Keyboard::Right)
+				{
+
+					if(_option != HOST)
+						_option++;
+					else
+						_option = EDITOR;
+				}
+
+				if(Event.key.code == sf::Keyboard::Return)
+				{
+
+				_LeftBlock.setFillColor(sf::Color::Transparent);
+				_CenterBlock.setFillColor(sf::Color::Transparent);
+				_RightBlock.setFillColor(sf::Color::Transparent);
+				_blockText.setString("");
+					switch(_option)
+					{
+					case EDITOR:
+						done = true;
+						break;
+					case PLAY:
+						askID();
+						askIP();
+						done = true;
+						break;
+
+					case HOST:
+						done = true;
+						break;
+
+					}
+				}
+
+		switch(_option)
+			{
+			case EDITOR:
+				_LeftBlock.setFillColor(sf::Color::Green);
+				_CenterBlock.setFillColor(sf::Color::White);
+				_RightBlock.setFillColor(sf::Color::White);
+				_blockText.setPosition(_LeftBlock.getPosition());
+				_blockText.setString("EDITOR");
+				break;
+			case PLAY:
+				_LeftBlock.setFillColor(sf::Color::White);
+				_CenterBlock.setFillColor(sf::Color::Green);
+				_RightBlock.setFillColor(sf::Color::White);
+				_blockText.setPosition(_CenterBlock.getPosition());
+				_blockText.setString("PLAY");
+				break;
+			case HOST:
+				_CenterBlock.setFillColor(sf::Color::White);
+				_RightBlock.setFillColor(sf::Color::Green);
+				_LeftBlock.setFillColor(sf::Color::White);
+				_blockText.setPosition(_RightBlock.getPosition());
+					_blockText.setString("HOST");
+				break;
+			}
+
+			}
+		}
+		draw();
+		}
+
+
+
+}
+
 void StartScreen::run()
 {
-	askID();
-	askIP();
+	askWhatYouWannaDo();
 	_window.close();
 }
 
 
 void StartScreen::draw()
 {	
+	_window.draw(_LeftBlock);
+	_window.draw(_CenterBlock);
+	_window.draw(_RightBlock);
+
 	_window.draw(_textInput);
 	_window.draw(_screenText);
+	_window.draw(_blockText);
+
 	_window.display();
 	_window.clear();
 

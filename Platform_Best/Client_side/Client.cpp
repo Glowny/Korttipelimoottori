@@ -2,18 +2,37 @@
 
 
 Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(window, _table)
-{
+{	
+	//_font = new sf::Font;
 	_window.setActive(false);
 	_window.setVisible(false);
+	//_font->loadFromFile("comic.ttf");
 
 	_port = 2000;
-	initialize();
+
+	_startScreen.run();
+
+	switch(_startScreen.getOption())
+	{
+	case EDITOR:
+		//_editor.setFont(*_font);
+		_editor.initialize();
+		_editor.run();
+		break;
+	case PLAY:
+		initialize();
+		run();
+
+	case HOST:
+		break;
+	}
+
 }
 
 void Client::initialize()
 {
 	_socket.setBlocking(false);
-	_startScreen.run();
+	
 	_ip = _startScreen.getIp();
 	
 	std::cout<<_ip.toString()<<std::endl;
@@ -71,6 +90,8 @@ void Client::receiver()
 			//Otetaan vastaan alkukäsi ja muut pelaajat.
 		case START:
 
+			_currentPlayerIndex = 0;
+
 			_tempHand.hand.clear();
 
 			sf::Uint16 areasAmount;
@@ -84,7 +105,22 @@ void Client::receiver()
 				std::cout<<tempText<<" joined"<<std::endl;
 				if(tempText.size() > 0)
 				_table.addPlayer(tempText);
+				if(tempText == _id)
+					_ownIndex = i;
 			}
+
+			sf::Uint16 cardAmountsSize;
+
+			_packet>>cardAmountsSize;
+
+			for(int i = 0; i < cardAmountsSize; i++)
+			{
+				sf::Uint16 temp;
+				_packet>>temp;
+				_cardAmounts.push_back(temp);
+			}
+
+			_table.setCardAmounts(_cardAmounts, _id);
 
 			_table.createAreas(areasAmount);
 
@@ -104,6 +140,10 @@ void Client::receiver()
 
 			//Pelataan vuoro ja lähetetään pelatut kortit.
 		case TURN:
+
+			_currentPlayerIndex++;
+			if(_currentPlayerIndex == _playerCount)
+				_currentPlayerIndex = 0;
 
 			_tempCardPacket._cards.hand.clear();
 
@@ -132,19 +172,26 @@ void Client::receiver()
 
 			//Otetaan vastaan toisen pelaajan pelatut kortit.
 		case ADD_CARDS:
+
 			_tempCardPacket._cards.clear();
 
 			_packet>>_tempCardPacket;
 
 			if(_tempCardPacket._cards.size()>0)
 			{
-				std::cout<<_currentPlayer<<" plays: "<<_tempCardPacket._cards.hand[0].suit<<" "<<_tempCardPacket._cards.hand[0].value<<std::endl;
+				std::cout<<_table.getPlayers()[_currentPlayerIndex]<<" plays: "<<_tempCardPacket._cards.hand[0].suit<<" "<<_tempCardPacket._cards.hand[0].value<<std::endl;
 				if(_tempCardPacket._area == _playerCount)
 					_table.addToTable("",_tempCardPacket._cards);
 				else
 					_table.addToTable(_table.getPlayers()[0], _tempCardPacket._cards);
 			}
 
+			if(_currentPlayerIndex != _ownIndex)
+				_table.removeFromHand(_table.getPlayers()[_currentPlayerIndex], _tempCardPacket._cards.size());
+
+			_currentPlayerIndex++;
+				if(_currentPlayerIndex == _playerCount)
+					_currentPlayerIndex = 0;
 			break;
 
 			//Korvataan pelialueen kortit saaduilla

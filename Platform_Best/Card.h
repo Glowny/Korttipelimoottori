@@ -37,11 +37,9 @@ friend bool operator !=(Card &card1, Card &card2)
 }
 
 public:
-	Card(int v, int s) : value(v), suit(s){faceUp = false;}
-	Card(int v, int s, bool f) : value(v), suit(s), faceUp(f){}
+	Card(int v, int s) : value(v), suit(s){}
 	Card(){}
 	/*~Card(void);*/
 sf::Uint16 value;
 sf::Uint16 suit;
-bool faceUp;
 };

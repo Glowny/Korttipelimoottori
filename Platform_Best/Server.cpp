@@ -55,7 +55,7 @@ std::vector<std::string> Server::reset(int playercount)
 void Server::send(int i, CardPacket cp)
 {
 	_packet.clear();
-	_packetID = CARDS;
+	_packetID = ADD_CARDS;
 	_packet<<_packetID<<cp;
 	_clients[i]->send(_packet);
 }
@@ -63,7 +63,7 @@ void Server::send(int i, CardPacket cp)
 void Server::send(CardPacket cp)
 {
 	_packet.clear();
-	_packetID = CARDS;
+	_packetID = ADD_CARDS;
 	_packet<<_packetID<<cp;
 
 	for(int i = 0; i < _clients.size(); i++)
@@ -83,21 +83,41 @@ void Server::send(std::string message)
 	}
 }
 
-void Server::send(int i, Hand cards, std::vector<std::string> playerIDs)
+void Server::send(int i, int areas, Hand cards, std::vector<std::string> playerIDs, std::vector<sf::Uint16> cardAmounts)
 {
 	_packet.clear();
 	_packetID = START;
 
 	sf::Uint16 vectorSize = playerIDs.size();
+	sf::Uint16 areasAmount = areas;
+	sf::Uint16 cardAmountsSize = cardAmounts.size();
 
-	_packet<<_packetID<<cards<<vectorSize;
+	_packet<<_packetID<<areasAmount<<cards<<vectorSize;
 
 	for(int j = 0; j < vectorSize; j++)
 	{
 			_packet<<playerIDs[j];
 	}
 
+	_packet<<cardAmountsSize;
+
+	for(int j = 0; j < cardAmounts.size(); j++)
+	{
+		_packet<<cardAmounts[j];
+	}
 	_clients[i]->send(_packet);
+}
+
+void Server::sendReplacement(CardPacket cp)
+{
+	_packet.clear();
+	_packetID = SET_CARDS;
+	_packet<<_packetID<<cp;
+
+	for(int i = 0; i < _clients.size(); i++)
+	{
+	_clients[i]->send(_packet);
+	}
 }
 
 CardPacket Server::receive(int i)

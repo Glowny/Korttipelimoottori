@@ -24,12 +24,30 @@ ButtonObject::~ButtonObject(void)
 {
 }
 
+void ButtonObject::splode()
+{
+	_splosions.push_back(Explosion(sf::Vector2f(_shape.getPosition().x+_shape.getSize().x*0.5f,_shape.getPosition().y+_shape.getSize().y*0.5f)));
+}
+
 void ButtonObject::draw(sf::RenderWindow &window)
 {
+
 	if(_sprite.getTexture() != NULL)
 		window.draw(_sprite);
 	else
 		window.draw(_shape);
+
+	for(int i = 0; i < _splosions.size();)
+	{
+
+	if(_splosions[i].update())
+	{
+		_splosions[i].draw(window);
+		i++;
+	}
+	else
+	_splosions.erase(_splosions.begin()+i);
+	}
 
 	window.draw(_text);
 }

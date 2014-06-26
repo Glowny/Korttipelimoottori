@@ -105,7 +105,10 @@ bool UserInterface::checkInput()
 					else if(!turnEndCheck(getSelected(), _table))
 						_popUps.push_back(PopUp(*_cardFont,"Too few cards, man!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
 					else
+					{
+						_buttons[0].splode();
 						ready = true;
+					}
 				}
 			}
 			break;

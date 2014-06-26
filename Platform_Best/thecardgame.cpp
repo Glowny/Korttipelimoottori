@@ -7,7 +7,7 @@ int main()
 	Server server;
 	Platform platform(server);
 
-	platform.setUp(players);
+	platform.setUp(players, 6);
 	bool win=0;
 	int cardCounter = 1;
 	while (!win)
@@ -28,10 +28,8 @@ int main()
 			{
 				if (cardCounter == players)
 				{
-					Card tempC(14,1);
 					Hand tempH;
-					tempH.hand.push_back(tempC);
-					server.send(CardPacket(0,tempH));
+					server.sendReplacement(CardPacket(players,tempH));
 					cardCounter = 1;
 
 					// tai käske clienttiä tyhjentämään pöytä
@@ -39,15 +37,15 @@ int main()
 			}
 			else
 			{
-				Card tempC(14,1);
 				Hand tempH;
-				tempH.hand.push_back(tempC);
-				server.send(CardPacket(0,tempH));
+				server.sendReplacement(CardPacket(players,tempH));
 				cardCounter = 1;
 				// tai käske clienttiä tyhjentämään pöytä
 			}
 				
 		}
+		else
+			cardCounter = 1;
 	
 	}
 	return 0;

@@ -145,6 +145,15 @@ void TableArea::removeCards(Hand cards)
 	lineUp();
 }
 
+void TableArea::removeCards(int cards)
+{
+	for(int i = 0; i < cards; i++)
+	{
+		_cardObjects.pop_back();
+	}
+	lineUp();
+}
+
 void TableArea::clearArea()
 {
 	_cardObjects.clear();
@@ -160,6 +169,32 @@ void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 	for(int i = 0; i < cards.hand.size();i++)
 	{
 		_cardObjects.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
+	}
+
+	for(int i = 0; i < _cardObjects.size();i++)
+	{
+
+	if(_area.width > _area.height)
+	{
+	_cardObjects[i].setSize(cardSize);
+	}
+
+	else
+	_cardObjects[i].setSize(cardSize);
+	}
+
+	lineUp();
+}
+
+void TableArea::addCards(int cards, sf::RenderWindow &window)
+{
+	sf::Vector2f cardSize = sf::Vector2f(window.getSize().x,window.getSize().y);
+	cardSize.x*=0.0375f;
+	cardSize.y*=0.075f;
+
+	for(int i = 0; i < cards;i++)
+	{
+		_cardObjects.push_back(CardObject(Card(),*_suitTexture,*_cardFont));
 	}
 
 	for(int i = 0; i < _cardObjects.size();i++)

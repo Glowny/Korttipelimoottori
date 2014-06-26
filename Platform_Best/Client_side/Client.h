@@ -3,6 +3,7 @@
 #include "Table.h"
 #include "StartScreen.h"
 #include "UserInterface.h"
+#include "Editor.h"
 #include <string>
 #include <iostream>
 #include <vector>
@@ -30,8 +31,9 @@ private:
 	void initialize();
 	void receiver();
 	int _port;
+	//sf::Font *_font;
 	sf::IpAddress _ip;
-	std::string _id, _currentPlayer;
+	std::string _id;
 	sf::Packet _packet;
 	sf::Uint16 _packetID, _currentArea;
 	sf::TcpSocket _socket;
@@ -42,4 +44,7 @@ private:
 	CardPacket _tempCardPacket;
 	Hand _tempHand;
 	UserInterface _UI;
+	Editor _editor;
+	std::vector<int> _cardAmounts;
+	int _currentPlayerIndex, _ownIndex;
 };

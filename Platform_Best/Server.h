@@ -6,7 +6,8 @@ enum PACKET_ID
 {
 	WAIT,
 	START,
-	CARDS,
+	ADD_CARDS,
+	SET_CARDS,
 	MESSAGE,
 	TURN,
 };
@@ -22,7 +23,8 @@ public:
 	void send(CardPacket cards);
 	void send(int i, CardPacket cards);
 	void send(int i, std::string message);
-	void send(int i, Hand cards, std::vector<std::string> playerIDs);
+	void send(int i, int areas, Hand cards, std::vector<std::string> playerIDs, std::vector<sf::Uint16> cardAmounts);
+	void sendReplacement(CardPacket cards);
 	void giveTurn(int i);
 	CardPacket receive(int i);
 private:

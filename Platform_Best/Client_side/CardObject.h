@@ -22,7 +22,4 @@ private:
 	sf::Texture *_suitTexture;
 	sf::Font *_font;
 	sf::Text *_text;
-	
-
 };
-
