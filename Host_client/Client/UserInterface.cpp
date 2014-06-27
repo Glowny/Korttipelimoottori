@@ -3,6 +3,7 @@
 
 UserInterface::UserInterface(sf::RenderWindow &window):_window(window)
 {
+	_endTurn = false;
 	_cardFont = new sf::Font;
 	float width = _window.getSize().x;
 	float height = _window.getSize().y;
@@ -35,10 +36,93 @@ void UserInterface::init(std::vector<sf::FloatRect> areas)
 	}
 }
 
-bool UserInterface::checkInput()
+void UserInterface::checkMouseClick(sf::Vector2i mousepos)
+{
+	checkTableAreas(mousepos);
+	checkCardObjects(mousepos);
+	checkButtons(mousepos);
+
+}
+
+void UserInterface::checkButtons(sf::Vector2i mousepos)
+{	
+	_endTurn = false;
+
+	if(_buttons[0].getArea().contains(sf::Vector2f(mousepos)))
+		{
+			if(_selectedArea == NOTHING)
+			{
+				_popUps.push_back(PopUp(*_cardFont,"Select Area!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
+			}
+			else
+			_endTurn = true;
+		}
+}
+
+void UserInterface::checkCardObjects(sf::Vector2i mousepos)
+{
+	for(int i = 0; i < _cardObjects.size();i++)
+	{
+		if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
+		{
+			for(int j = 0; j < _playableCards.hand.size();j++)
+			{
+				if(_cardObjects[i] == _playableCards.hand[j])
+				{
+					if(getSelected().hand.size() >= _cardLimit)
+					{
+						for(int k = 0; k < getSelected().hand.size(); k++)
+						{
+							if(_mptype == SAME_VALUE)
+								if(_cardObjects[i].value == getSelected().hand[k].value)
+								{
+									_cardObjects[i].select();
+									break;
+								}
+						}
+					}
+					else
+						_cardObjects[i].select();
+				}
+			}
+		}
+	}
+}
+
+
+void UserInterface::checkTableAreas(sf::Vector2i mousepos)
+{
+	for(int i = 0; i < _allowedAreas.size(); i++)
+		{
+			if(_allowedAreas[i] == SECONDARY_CARDS)
+			{
+				if(_borders[0].getGlobalBounds().contains(sf::Vector2f(mousepos)))
+				{
+					_borders[4].setFillColor(sf::Color::Transparent);
+					_borders[0].setFillColor(sf::Color(50,50,50,50));
+					_selectedArea = SECONDARY_CARDS;
+				}
+			}
+				
+			if(_allowedAreas[i] == TABLE_CENTER)
+			{
+				if(_borders[4].getGlobalBounds().contains(sf::Vector2f(mousepos)))
+				{
+					_borders[0].setFillColor(sf::Color::Transparent);
+					_borders[4].setFillColor(sf::Color(50,50,50,50));
+					_selectedArea = TABLE_CENTER;
+				}
+			}
+		}
+}
+
+void UserInterface::checkMouseHover(sf::Vector2i mousepos)
 {
 
-	bool ready = false;
+}
+
+bool UserInterface::checkInput()
+{
 	sf::Event Event;
 	while(_window.pollEvent(Event))
 	{
@@ -47,77 +131,20 @@ bool UserInterface::checkInput()
 		case sf::Event::Closed:
 			_window.close();
 			break;
+
 		case sf::Event::KeyPressed:
 			if(Event.key.code == sf::Keyboard::Escape)
 				_window.close();
-			break;
+				break;
+
 		case sf::Event::MouseButtonPressed:
 			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
-			{
-	
-				for(int i = 0; i < _allowedAreas.size(); i++)
-				{
-					if(_allowedAreas[i] == SECONDARY_CARDS)
-					{
-						if(_borders[0].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-						{
-							_borders[4].setFillColor(sf::Color::Transparent);
-							_borders[0].setFillColor(sf::Color(50,50,50,50));
-							_selectedArea = SECONDARY_CARDS;
-						}
-					}
-				
-					if(_allowedAreas[i] == TABLE_CENTER)
-					{
-						if(_borders[4].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-						{
-							_borders[0].setFillColor(sf::Color::Transparent);
-							_borders[4].setFillColor(sf::Color(50,50,50,50));
-							_selectedArea = TABLE_CENTER;
-						}
-					}
-				}
-				std::cout << "something happens";
-				for(int i = 0; i < _cardObjects.size();i++)
-				{
-					if(_cardObjects[i].getArea().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-					{
-						for(int j = 0; j < _playableCards.hand.size();j++)
-						{
-							if(_cardObjects[i] == _playableCards.hand[j])
-							{
-								if(getSelected().hand.size() >= _cardLimit)
-								{
-									for(int k = 0; k < getSelected().hand.size(); k++)
-									{
-										if(_mptype == SAME_VALUE)
-											if(_cardObjects[i].value == getSelected().hand[k].value)
-											{
-												_cardObjects[i].select();
-												break;
-											}
-									}
-								}
-								else
-									_cardObjects[i].select();
-							}
-						}
-					}
-				}
-
-				if(_buttons[0].getArea().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-				{
-					if(_selectedArea == NOTHING)
-						_popUps.push_back(PopUp(*_cardFont,"Select Area!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
-					else
-						ready = true;
-				}
-			}
-			break;
-			
+				checkMouseClick(sf::Mouse::getPosition());
 		}
+		break;
+			
 	}
-	return ready;
+	return _endTurn;
 }
 
 void UserInterface::removeCards(Hand cards)
