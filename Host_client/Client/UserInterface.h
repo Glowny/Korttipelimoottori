@@ -40,7 +40,13 @@ public:
 	void setCardLimit(int limit){_cardLimit = limit;}
 	void setPlayableCards(Hand h){_playableCards = h;}
 	void endScreen(std::string player,std::string message,bool victory);
+	void checkTableAreas(sf::Vector2i mousepos);
+	void checkCardObjects(sf::Vector2i mousepos);
+	void checkMouseClick(sf::Vector2i mousepos);
+	void checkMouseHover(sf::Vector2i mousepos);
+	void checkButtons(sf::Vector2i mousepos);
 private:
+	bool _endTurn;
 	int _selectedArea;
 	void lineUpCards();
 	void lineUpButtons();
