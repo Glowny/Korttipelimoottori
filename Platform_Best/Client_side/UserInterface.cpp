@@ -3,6 +3,9 @@
 
 UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(window), _table(table)
 {
+	_endTurn = false;
+	_ownTurn = false;
+	_gameOn = false;
 	_cardFont = new sf::Font;
 	float width = _window.getSize().x;
 	float height = _window.getSize().y;
@@ -17,6 +20,7 @@ UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(win
 	_buttonArea = (sf::FloatRect(width*0.75f,height*0.75f,
 		width*0.25f,height*0.25f));
 
+	addButton("End Turn");
 }
 
 
@@ -36,86 +40,113 @@ void UserInterface::init(std::vector<sf::FloatRect> areas)
 	}
 }
 
-bool UserInterface::checkInput()
+void UserInterface::checkMouseClick(sf::Vector2i mousepos)
+{
+	checkTableAreas(mousepos);
+	checkCardObjects(mousepos);
+	checkButtons(mousepos);
+
+}
+
+void UserInterface::checkButtons(sf::Vector2i mousepos)
+{	
+
+	if(_buttons[0].getArea().contains(sf::Vector2f(mousepos)))
+		{
+			if(_selectedArea == NOTHING)
+				_popUps.push_back(PopUp(*_cardFont,"Select Area!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
+			else if(!turnEndCheck(getSelected(), _table))
+				_popUps.push_back(PopUp(*_cardFont,"Too few cards, man!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
+			else
+			{
+				_buttons[0].splode();
+				_endTurn = true;
+				_ownTurn = false;
+			}
+		}
+}
+
+void UserInterface::checkCardObjects(sf::Vector2i mousepos)
+{
+	for(int i = 0; i < _cardObjects.size();i++)
+		{
+			if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
+			{
+				if(clickCheck(Card(_cardObjects[i].value, _cardObjects[i].suit),_cards,getSelected(),_table) && _ownTurn)
+					_cardObjects[i].select();
+			}
+		}
+}
+
+
+void UserInterface::checkTableAreas(sf::Vector2i mousepos)
+{
+	if(_borders[_borders.size()-1].getGlobalBounds().contains(sf::Vector2f(mousepos)))
+		{
+			_borders[_borders.size()-1].setFillColor(sf::Color(50,50,50,50));
+			_selectedArea = _borders.size()-1;
+
+			if(_borders.size()>1)
+			{
+				for(int i = 0; i < _borders.size()-1; i++)
+				{
+					_borders[i].setFillColor(sf::Color::Transparent);
+				}
+			}
+		}
+
+	if(_borders.size()>1)
+	{
+		for(int i = 0; i < _borders.size(); i++)
+		{
+			if(_borders[i].getGlobalBounds().contains(sf::Vector2f(mousepos)))
+			{
+				_borders[i].setFillColor(sf::Color(50,50,50,50));
+				_selectedArea = i;
+
+				for(int j = 0; j < _borders.size(); j++)
+				{
+					if(j != i)
+						_borders[j].setFillColor(sf::Color::Transparent);
+				}
+			}
+		}
+	}
+}
+
+void UserInterface::checkMouseHover(sf::Vector2i mousepos)
 {
 
-	bool ready = false;
-	sf::Event Event;
-	while(_window.pollEvent(Event))
-	{
-		switch(Event.type)
+}
+
+bool UserInterface::checkInput()
+{
+		sf::Event Event;
+		_endTurn = false;
+		while(_window.pollEvent(Event))
 		{
-		case sf::Event::Closed:
-			_window.close();
-			break;
-		case sf::Event::KeyPressed:
-			if(Event.key.code == sf::Keyboard::Escape)
-				_window.close();
-			break;
-		case sf::Event::MouseButtonPressed:
-			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
+			switch(Event.type)
 			{
-				if(_borders[_borders.size()-1].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
+			case sf::Event::Closed:
+				_window.close();
+				break;
+
+			case sf::Event::KeyPressed:
+				if(Event.key.code == sf::Keyboard::Escape)
+					_window.close();
+					break;
+
+			case sf::Event::MouseButtonPressed:
+				if(_gameOn)
 				{
-					_borders[_borders.size()-1].setFillColor(sf::Color(50,50,50,50));
-					_selectedArea = _borders.size()-1;
-
-					if(_borders.size()>1)
-					{
-						for(int i = 0; i < _borders.size()-1; i++)
-						{
-							_borders[i].setFillColor(sf::Color::Transparent);
-						}
-					}
-				}
-
-				if(_borders.size()>1)
-				{
-					for(int i = 0; i < _borders.size(); i++)
-					{
-						if(_borders[i].getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-						{
-							_borders[i].setFillColor(sf::Color(50,50,50,50));
-							_selectedArea = i;
-
-							for(int j = 0; j < _borders.size(); j++)
-							{
-								if(j != i)
-									_borders[j].setFillColor(sf::Color::Transparent);
-							}
-						}
-					}
-				}
-
-				std::cout << "something happens";
-
-				for(int i = 0; i < _cardObjects.size();i++)
-				{
-					if(_cardObjects[i].getArea().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-					{
-						if(clickCheck(Card(_cardObjects[i].value, _cardObjects[i].suit),_cards,getSelected(),_table))
-							_cardObjects[i].select();
-					}
-				}
-
-				if(_buttons[0].getArea().contains(sf::Vector2f(sf::Mouse::getPosition(_window))))
-				{
-					if(_selectedArea == NOTHING)
-						_popUps.push_back(PopUp(*_cardFont,"Select Area!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
-					else if(!turnEndCheck(getSelected(), _table))
-						_popUps.push_back(PopUp(*_cardFont,"Too few cards, man!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
-					else
-					{
-						_buttons[0].splode();
-						ready = true;
-					}
+					if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
+						checkMouseClick(sf::Mouse::getPosition(_window));
 				}
 			}
 			break;
 			
 		}
-	}
-	return ready;
+		return _endTurn;
 }
 
 void UserInterface::removeCards(Hand cards)
@@ -132,7 +163,6 @@ void UserInterface::removeCards(Hand cards)
 				std::cout << "Deleted: " << _cardObjects[i].suit << std::endl
 						<<	_cardObjects[i].value << std::endl;
 				_cardObjects.erase(_cardObjects.begin()+i);
-				_cards.hand.erase(_cards.hand.begin()+i);
 				erased = true;
 			}
 		}

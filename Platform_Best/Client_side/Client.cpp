@@ -9,7 +9,6 @@ Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(
 	//_font->loadFromFile("comic.ttf");
 
 	_port = 2000;
-
 	_startScreen.run();
 
 	switch(_startScreen.getOption())
@@ -48,7 +47,6 @@ void Client::initialize()
 	_packet.clear();
 	_window.setActive(true);
 	_window.setVisible(true);
-	_UI.addButton("End Turn");
 }
 
 void Client::run()
@@ -104,9 +102,7 @@ void Client::receiver()
 				_packet>>tempText;
 				std::cout<<tempText<<" joined"<<std::endl;
 				if(tempText.size() > 0)
-				_table.addPlayer(tempText);
-				if(tempText == _id)
-					_ownIndex = i;
+				_playerIDs.push_back(tempText);
 			}
 
 			sf::Uint16 cardAmountsSize;
@@ -120,7 +116,11 @@ void Client::receiver()
 				_cardAmounts.push_back(temp);
 			}
 
-			_table.setCardAmounts(_cardAmounts, _id);
+			_packet>>_ownIndex;
+
+			_table.setOwnIndex(_ownIndex);
+
+			_table.setCardAmounts(_cardAmounts);
 
 			_table.createAreas(areasAmount);
 
@@ -136,14 +136,15 @@ void Client::receiver()
 			}
 
 			std::cout<<"Tota cards: "<<_tempHand.hand.size()<<std::endl;
+
+			_UI.gameStart();
+
 			break;
 
 			//Pelataan vuoro ja lähetetään pelatut kortit.
 		case TURN:
 
-			_currentPlayerIndex++;
-			if(_currentPlayerIndex == _playerCount)
-				_currentPlayerIndex = 0;
+			_UI.turnOn();
 
 			_tempCardPacket._cards.hand.clear();
 
@@ -152,8 +153,8 @@ void Client::receiver()
 			while(!_UI.checkInput())
 			{
 				draw();
-
 			}
+
 			_tempCardPacket._cards = _UI.getSelected();
 
 			_UI.removeCards(_tempCardPacket._cards);
@@ -179,15 +180,12 @@ void Client::receiver()
 
 			if(_tempCardPacket._cards.size()>0)
 			{
-				std::cout<<_table.getPlayers()[_currentPlayerIndex]<<" plays: "<<_tempCardPacket._cards.hand[0].suit<<" "<<_tempCardPacket._cards.hand[0].value<<std::endl;
-				if(_tempCardPacket._area == _playerCount)
-					_table.addToTable("",_tempCardPacket._cards);
-				else
-					_table.addToTable(_table.getPlayers()[0], _tempCardPacket._cards);
+				std::cout<<_playerIDs[_currentPlayerIndex]<<" plays"<<std::endl;
+				_table.addToTable(_tempCardPacket._area,_tempCardPacket._cards);
 			}
 
 			if(_currentPlayerIndex != _ownIndex)
-				_table.removeFromHand(_table.getPlayers()[_currentPlayerIndex], _tempCardPacket._cards.size());
+				_table.removeFromHand(_currentPlayerIndex, _tempCardPacket._cards.size());
 
 			_currentPlayerIndex++;
 				if(_currentPlayerIndex == _playerCount)
@@ -201,10 +199,7 @@ void Client::receiver()
 
 			_packet>>_tempCardPacket;
 
-			if(_tempCardPacket._area == _playerCount)
-				_table.setToTable("", _tempCardPacket._cards);
-			else
-				_table.setToTable(_table.getPlayers()[0],_tempCardPacket._cards);
+			_table.setToTable(_tempCardPacket._area,_tempCardPacket._cards);
 
 			break;
 

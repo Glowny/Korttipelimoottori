@@ -39,17 +39,16 @@ std::vector<std::string> Server::initialize(int playercount)
 			}
 		}
 	}
+	_connectionOK = true;
 	return playerIDs;
 }
 
-std::vector<std::string> Server::reset(int playercount)
+void Server::reset()
 {
 	_packet.clear();
 	_clients.clear();
 	_selector.clear();
 	_selector.add(_listener);
-
-	return initialize(playercount);
 }
 
 void Server::send(int i, CardPacket cp)
@@ -105,6 +104,11 @@ void Server::send(int i, int areas, Hand cards, std::vector<std::string> playerI
 	{
 		_packet<<cardAmounts[j];
 	}
+
+	sf::Uint16 playerIndex;
+	playerIndex = i;
+	_packet<<playerIndex;
+
 	_clients[i]->send(_packet);
 }
 
@@ -133,6 +137,8 @@ CardPacket Server::receive(int i)
 			{
 				_packet>>temp;
 			}
+			else
+				_connectionOK = false;
 		}
 	}
 

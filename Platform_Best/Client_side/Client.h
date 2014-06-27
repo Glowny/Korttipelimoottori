@@ -46,5 +46,7 @@ private:
 	UserInterface _UI;
 	Editor _editor;
 	std::vector<int> _cardAmounts;
-	int _currentPlayerIndex, _ownIndex;
+	int _currentPlayerIndex;
+	sf::Uint16 _ownIndex;
+	std::vector<std::string> _playerIDs;
 };

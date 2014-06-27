@@ -5,10 +5,11 @@
 #include "PopUp.h"
 #include "Table.h"
 #include <SFML\Graphics.hpp>
+#include "DropDown.h"
 
 enum SELECTION_AREA
 {
-	NOTHING=-1,
+	NOTHING = -1,
 	TABLE_CENTER,
 	SECONDARY_CARDS,
 };
@@ -30,7 +31,15 @@ public:
 	void init(std::vector<sf::FloatRect>areas);
 	void endScreen(std::string player,std::string message,bool victory);
 	void popUp(std::string message, int time);
+	void checkTableAreas(sf::Vector2i mousepos);
+	void checkCardObjects(sf::Vector2i mousepos);
+	void checkMouseClick(sf::Vector2i mousepos);
+	void checkMouseHover(sf::Vector2i mousepos);
+	void checkButtons(sf::Vector2i mousepos);
+	void turnOn(){_ownTurn = true;}
+	void gameStart(){_gameOn = true;}
 private:
+	bool _endTurn, _ownTurn, _gameOn;
 	int _selectedArea;
 	void lineUpCards();
 	void lineUpButtons();

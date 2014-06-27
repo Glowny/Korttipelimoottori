@@ -11,6 +11,13 @@ Platform::~Platform(void)
 {
 }
 
+void Platform::reset()
+{
+	_dealer.initialize();
+	_players.clear();
+	_server.reset();
+}
+
 void Platform::setUp(int playerAmount)
 {
 	_dealer.shuffle();
@@ -41,7 +48,48 @@ void Platform::setUp(int playerAmount)
 
 	for(int i = 0; i < _players.size(); i++)
 	{
-		_server.send(i,(playerAmount+1),_players[i].getHand(), playerIDs, _cardAmounts);
+		_server.send(i,1,_players[i].getHand(), playerIDs, _cardAmounts);
+	}
+}
+
+void Platform::setUp(int playerAmount, bool frontAreas)
+{
+	_dealer.shuffle();
+
+	std::vector<std::string> playerIDs = _server.initialize(playerAmount);
+
+	for(int i = 0; i < playerIDs.size(); i++)
+	{
+		_players.push_back(Player(playerIDs[i]));
+	}
+
+	int deckSize = _dealer.deck.hand.size();
+
+	for(int i = 0; i < deckSize; i++)
+	{
+		for(int j = 0; j < _players.size(); j++)
+		{
+			_players[j].addCards(_dealer.deal(1));
+		}
+	}
+
+	std::vector<sf::Uint16> _cardAmounts;
+
+	for(int i = 0; i < _players.size(); i++)
+	{
+		_cardAmounts.push_back(_players[i].getHand().hand.size());
+	}
+
+	int areasAmount;
+
+	if(frontAreas)
+		areasAmount = _players.size()+1;
+	else
+		areasAmount = 1;
+
+	for(int i = 0; i < _players.size(); i++)
+	{
+		_server.send(i,areasAmount,_players[i].getHand(), playerIDs, _cardAmounts);
 	}
 }
 
@@ -70,7 +118,43 @@ void Platform::setUp(int playerAmount,int startingHandSize)
 
 	for(int i = 0; i < _players.size(); i++)
 	{
-		_server.send(i,(playerAmount+1),_players[i].getHand(), playerIDs, _cardAmounts);
+		_server.send(i,1,_players[i].getHand(), playerIDs, _cardAmounts);
+	}
+}
+
+void Platform::setUp(int playerAmount,int startingHandSize, bool frontAreas)
+{
+	_dealer.shuffle();
+
+	std::vector<std::string> playerIDs = _server.initialize(playerAmount);
+
+	for(int i = 0; i < playerIDs.size(); i++)
+	{
+		_players.push_back(Player(playerIDs[i]));
+	}
+
+	for(int i = 0; i < _players.size(); i++)
+	{
+		_players[i].addCards(_dealer.deal(startingHandSize));
+	}
+
+	std::vector<sf::Uint16> _cardAmounts;
+
+	for(int i = 0; i < _players.size(); i++)
+	{
+		_cardAmounts.push_back(_players[i].getHand().hand.size());
+	}
+
+	int areasAmount;
+
+	if(frontAreas)
+		areasAmount = _players.size()+1;
+	else
+		areasAmount = 1;
+
+	for(int i = 0; i < _players.size(); i++)
+	{
+		_server.send(i,areasAmount,_players[i].getHand(), playerIDs, _cardAmounts);
 	}
 }
 

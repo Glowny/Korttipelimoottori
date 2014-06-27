@@ -11,20 +11,19 @@ class Table
 public:
 	Table(sf::RenderWindow &window);
 	~Table(void);
-	void addToTable(std::string player,Hand h);
-	void setToTable(std::string player,Hand h);
+	void addToTable(int index,Hand h);
+	void setToTable(int index,Hand h);
 	void drawTable();
-	void removeFromTable(std::string player,Hand h);
-	void removeFromHand(std::string player, int cards);
-	void addPlayer(std::string player);
+	void removeFromTable(int index,Hand h);
+	void removeFromHand(int playerIndex, int cards);
+	void setOwnIndex(int i){_ownIndex = i;}
 	std::vector<sf::FloatRect> getAreas();
 	std::vector<TableArea> getTableAreas(){return _tableAreas;}
-	std::vector<std::string> getPlayers(){return _players;}
 	void createAreas(int areaCount);
-	void setCardAmounts(std::vector<int> cardAmounts, std::string id);
+	void setCardAmounts(std::vector<int> cardAmounts);
 
 private:
-	std::vector<std::string>_players;
+	int _ownIndex;
 	std::vector<TableArea>_tableAreas;
 	std::vector<TableArea>_handAreas;
 	sf::RenderWindow &_window;

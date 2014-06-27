@@ -26,7 +26,7 @@ public:
 private:
 	LINEUP_STYLE _style;
 	void lineUp();
-	std::vector<CardObject>_cardObjects;
+	std::vector<CardObject>_cardObjects, _latestCards;
 	sf::Font *_cardFont;
 	sf::Texture *_suitTexture;
 };

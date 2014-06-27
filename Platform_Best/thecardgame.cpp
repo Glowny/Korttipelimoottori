@@ -7,19 +7,20 @@ int main()
 	Server server;
 	Platform platform(server);
 
-	platform.setUp(players, 6);
-	bool win=0;
+	platform.setUp(players,5);
+	bool win=false;
 	int cardCounter = 1;
 	while (!win)
 	{
-		Player lastPlayer = platform.getCurrentPlayer();
+		int lastPlayerIndex = platform.getCurrentPlayerIndex();
 		
-		if(lastPlayer.getHand().hand.size() == 0)
+		
+		CardPacket receivedCards = platform.processTurn();
+		if(platform.getPlayer(lastPlayerIndex).getHand().hand.size() == 0)
 			{
-				server.send(lastPlayer.getID() +" voitti");
+				server.send(platform.getPlayer(lastPlayerIndex).getID() +" voitti");
 				win = true;
 			}
-		CardPacket receivedCards = platform.processTurn();
 		server.send(receivedCards);
 		if(receivedCards._cards.hand.size() == 0)
 		{
@@ -46,6 +47,14 @@ int main()
 		}
 		else
 			cardCounter = 1;
+
+		if(!server.checkConnection())
+		{
+			platform.reset();
+			platform.setUp(players,5);
+			cardCounter = 1;
+			win = false;
+		}
 	
 	}
 	return 0;

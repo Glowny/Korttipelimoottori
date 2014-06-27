@@ -18,7 +18,7 @@ public:
 	Server(void);
 	~Server(void);
 	std::vector<std::string> initialize(int playercount);
-	std::vector<std::string> reset(int playercount);
+	void reset();
 	void send(std::string message);
 	void send(CardPacket cards);
 	void send(int i, CardPacket cards);
@@ -27,6 +27,7 @@ public:
 	void sendReplacement(CardPacket cards);
 	void giveTurn(int i);
 	CardPacket receive(int i);
+	bool checkConnection(){return _connectionOK;}
 private:
 	int _port;
 	sf::TcpListener _listener;
@@ -34,4 +35,5 @@ private:
 	std::vector<sf::TcpSocket*> _clients;
 	sf::Packet _packet;
 	sf::Uint16 _packetID;
+	bool _connectionOK;
 };

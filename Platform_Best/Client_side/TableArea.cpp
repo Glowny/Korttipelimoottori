@@ -82,6 +82,16 @@ void TableArea::lineUp()
 					_cardObjects[i].setPosition(sf::Vector2f(_area.left+centerx-0.5f*_cardObjects[i].getArea().width,(_area.top+_cardObjects[i].getArea().height)));
 				}
 			}
+
+			for(int i = 0; i < _latestCards.size();i++)
+			{
+				_latestCards[i].setPosition(sf::Vector2f(_area.left+centerx-0.5f*_cardObjects[i].getArea().width+i*0.5f*_cardObjects[i].getArea().width,_area.top));
+				if(_area.top == 5)
+				{
+					_latestCards[i].setRotation(180);
+					_latestCards[i].setPosition(sf::Vector2f(_area.left+centerx-0.5f*_cardObjects[i].getArea().width+i*0.5f*_cardObjects[i].getArea().width,(_area.top+_cardObjects[i].getArea().height)));
+				}
+			}
 		
 		}
 		else
@@ -104,6 +114,23 @@ void TableArea::lineUp()
 				
 				}
 			}
+
+			for(int i = 0; i < _latestCards.size();i++)
+			{
+			
+				if(_area.left == 5)
+					{
+					_latestCards[i].setRotation(90);
+					_latestCards[i].setPosition(sf::Vector2f(_area.left+_area.width,_area.top+i*_area.height));
+				
+					}
+				else
+				{
+					_latestCards[i].setRotation(270);
+					_latestCards[i].setPosition(sf::Vector2f(_area.left,_area.top+i*_area.height));
+				
+				}
+			}
 		}
 
 	}
@@ -113,11 +140,19 @@ void TableArea::lineUp()
 
 void TableArea::draw(sf::RenderWindow &window)
 {
-
-
-	for(int i = 0; i < _cardObjects.size(); i++)
+	if(_latestCards.size() == 0)
 	{
-		_cardObjects[i].draw(window);
+		for(int i = 0; i < _cardObjects.size(); i++)
+		{
+			_cardObjects[i].draw(window);
+		}
+	}
+	else
+	{
+		for(int i = 0; i < _latestCards.size(); i++)
+		{
+			_latestCards[i].draw(window);
+		}
 	}
 }
 
@@ -166,9 +201,14 @@ void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 	cardSize.x*=0.075f;
 	cardSize.y*=0.15f;
 
+	if(_style == PILE)
+		_latestCards.clear();
+
 	for(int i = 0; i < cards.hand.size();i++)
 	{
 		_cardObjects.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
+		if(_style == PILE)
+			_latestCards.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
 	}
 
 	for(int i = 0; i < _cardObjects.size();i++)
@@ -181,6 +221,21 @@ void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 
 	else
 	_cardObjects[i].setSize(cardSize);
+	}
+
+	if(_style == PILE)
+	{
+		for(int i = 0; i < _latestCards.size();i++)
+		{
+
+		if(_area.width > _area.height)
+		{
+		_latestCards[i].setSize(cardSize);
+		}
+
+		else
+		_latestCards[i].setSize(cardSize);
+		}
 	}
 
 	lineUp();
