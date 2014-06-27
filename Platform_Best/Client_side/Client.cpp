@@ -3,10 +3,8 @@
 
 Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(window, _table)
 {	
-	//_font = new sf::Font;
 	_window.setActive(false);
 	_window.setVisible(false);
-	//_font->loadFromFile("comic.ttf");
 
 	_port = 2000;
 	_startScreen.run();
@@ -14,7 +12,6 @@ Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(
 	switch(_startScreen.getOption())
 	{
 	case EDITOR:
-		//_editor.setFont(*_font);
 		_editor.initialize();
 		_editor.run();
 		break;
@@ -25,7 +22,6 @@ Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(
 	case HOST:
 		break;
 	}
-
 }
 
 void Client::initialize()

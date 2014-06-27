@@ -4,6 +4,7 @@
 #include "StartScreen.h"
 #include "UserInterface.h"
 #include "Editor.h"
+#include "SoundManager.h"
 #include <string>
 #include <iostream>
 #include <vector>

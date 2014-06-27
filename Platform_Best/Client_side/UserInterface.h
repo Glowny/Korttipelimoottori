@@ -4,6 +4,7 @@
 #include "ButtonObject.h"
 #include "PopUp.h"
 #include "Table.h"
+#include "SoundManager.h"
 #include <SFML\Graphics.hpp>
 #include "DropDown.h"
 
@@ -54,4 +55,5 @@ private:
 	std::vector<sf::RectangleShape> _borders;
 	std::vector<PopUp> _popUps;
 	Table &_table;
+	SoundManager* _soundManager;
 };

@@ -20,7 +20,14 @@ UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(win
 	_buttonArea = (sf::FloatRect(width*0.75f,height*0.75f,
 		width*0.25f,height*0.25f));
 
+	_soundManager = new SoundManager;
+
+	_soundManager->playMusic();
+	_soundManager->InitialiseSound();
+
 	addButton("End Turn");
+	addButton("Mute Music");
+	addButton("Mute Sounds");
 }
 
 
@@ -54,16 +61,27 @@ void UserInterface::checkButtons(sf::Vector2i mousepos)
 	if(_buttons[0].getArea().contains(sf::Vector2f(mousepos)))
 		{
 			if(_selectedArea == NOTHING)
-				_popUps.push_back(PopUp(*_cardFont,"Select Area!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
+				popUp("Select area!", 1);
 			else if(!turnEndCheck(getSelected(), _table))
-				_popUps.push_back(PopUp(*_cardFont,"Too few cards, man!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
+				popUp("Too few cards, man!", 1);
 			else
 			{
+				_soundManager->playClick();
 				_buttons[0].splode();
 				_endTurn = true;
 				_ownTurn = false;
 			}
 		}
+	if(_buttons[1].getArea().contains(sf::Vector2f(mousepos)))
+	{
+		_soundManager->toggleMuteMusic();
+		_soundManager->playClick();
+	}
+	if(_buttons[2].getArea().contains(sf::Vector2f(mousepos)))
+	{
+		_soundManager->toggleMuteSounds();
+		_soundManager->playClick();
+	}
 }
 
 void UserInterface::checkCardObjects(sf::Vector2i mousepos)
@@ -73,7 +91,10 @@ void UserInterface::checkCardObjects(sf::Vector2i mousepos)
 			if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
 			{
 				if(clickCheck(Card(_cardObjects[i].value, _cardObjects[i].suit),_cards,getSelected(),_table) && _ownTurn)
+				{
 					_cardObjects[i].select();
+					_soundManager->playClick();
+				}
 			}
 		}
 }
@@ -85,6 +106,7 @@ void UserInterface::checkTableAreas(sf::Vector2i mousepos)
 		{
 			_borders[_borders.size()-1].setFillColor(sf::Color(50,50,50,50));
 			_selectedArea = _borders.size()-1;
+			_soundManager->playClick();
 
 			if(_borders.size()>1)
 			{
@@ -103,6 +125,7 @@ void UserInterface::checkTableAreas(sf::Vector2i mousepos)
 			{
 				_borders[i].setFillColor(sf::Color(50,50,50,50));
 				_selectedArea = i;
+				_soundManager->playClick();
 
 				for(int j = 0; j < _borders.size(); j++)
 				{
@@ -275,6 +298,7 @@ void UserInterface::endScreen(std::string player,std::string message,bool victor
 
 void UserInterface::popUp(std::string message, int time)
 {
+	_soundManager->playNotice();
 	_popUps.push_back(PopUp(*_cardFont, message, sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),time));
 }
 
