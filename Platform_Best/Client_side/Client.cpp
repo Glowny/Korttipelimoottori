@@ -38,9 +38,11 @@ void Client::initialize()
 
 	_packet<<_id;
 
-	_socket.send(_packet);
-
-	_packet.clear();
+	while(!(sf::Socket::Status::Done == _socket.send(_packet)))
+	{
+		draw();
+	}
+	
 	_window.setActive(true);
 	_window.setVisible(true);
 }
@@ -81,7 +83,7 @@ void Client::receiver()
 	case WAIT:
 		break;
 
-			//Otetaan vastaan alkukäsi ja muut pelaajat.
+			//Otetaan vastaan alkukï¿½si ja muut pelaajat.
 		case START:
 
 			_currentPlayerIndex = 0;
@@ -137,7 +139,7 @@ void Client::receiver()
 
 			break;
 
-			//Pelataan vuoro ja lähetetään pelatut kortit.
+			//Pelataan vuoro ja lï¿½hetetï¿½ï¿½n pelatut kortit.
 		case TURN:
 
 			_UI.turnOn();
@@ -199,7 +201,7 @@ void Client::receiver()
 
 			break;
 
-		//Saadan viestiä
+		//Saadan viestiï¿½
 		case MESSAGE:
 
 			std::string temp;
