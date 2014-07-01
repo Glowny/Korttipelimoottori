@@ -1,60 +1,49 @@
 #include "Client.h"
 
 
-Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(window)
-{
-	_font = new sf::Font;
+Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(window, _table)
+{	
 	_window.setActive(false);
 	_window.setVisible(false);
-	_font->loadFromFile("comic.ttf");
 
 	_port = 2000;
-
 	_startScreen.run();
 
 	switch(_startScreen.getOption())
 	{
 	case EDITOR:
-		//_editor.setFont(*_font);
 		_editor.initialize();
 		_editor.run();
 		break;
 	case PLAY:
 		initialize();
 		run();
-
 	case HOST:
 		break;
 	}
-
 }
 
 void Client::initialize()
-{	
+{
 	_socket.setBlocking(false);
-
+	
 	_ip = _startScreen.getIp();
-	_id = _startScreen.getID();
-
+	
 	std::cout<<_ip.toString()<<std::endl;
-
-
-	_window.setActive(true);
-	_window.setVisible(true);
-
+	_id = _startScreen.getID();
 	_window.setTitle(_id);
-
-	_table.addPlayer(_id);
 
 	_socket.connect(_ip, _port);
 
 	_packet<<_id;
-
-	_socket.send(_packet);
-
-	_packet.clear();
-	_UI.addButton("End Turn");
-	_UI.init(_table.getAreas());
+	
+	_window.setActive(true);
+	_window.setVisible(true);
+	
+	while(!(sf::Socket::Status::Done == _socket.send(_packet)))
+	{
+		draw();
+	}
 }
 
 void Client::run()
@@ -93,11 +82,16 @@ void Client::receiver()
 	case WAIT:
 		break;
 
-			//Otetaan vastaan alkukÃ¤si ja muut pelaajat.
-		case GAME_START:
-			sf::Uint16 _mptype;
+			//Otetaan vastaan alkukäsi ja muut pelaajat.
+		case START:
 
-			_packet>>_tempHand>>_mptype>>_playerCount;
+			_currentPlayerIndex = 0;
+
+			_tempHand.hand.clear();
+
+			sf::Uint16 areasAmount;
+
+			_packet>>areasAmount>>_tempHand>>_playerCount;
 
 			for(int i = 0; i < _playerCount; i++)
 			{
@@ -105,9 +99,29 @@ void Client::receiver()
 				_packet>>tempText;
 				std::cout<<tempText<<" joined"<<std::endl;
 				if(tempText.size() > 0)
-				_table.addPlayer(tempText);
+				_playerIDs.push_back(tempText);
 			}
-			_UI.setMultiplayType(_mptype);
+
+			sf::Uint16 cardAmountsSize;
+
+			_packet>>cardAmountsSize;
+
+			for(int i = 0; i < cardAmountsSize; i++)
+			{
+				sf::Uint16 temp;
+				_packet>>temp;
+				_cardAmounts.push_back(temp);
+			}
+
+			_packet>>_ownIndex;
+
+			_table.setOwnIndex(_ownIndex);
+
+			_table.setCardAmounts(_cardAmounts);
+
+			_table.createAreas(areasAmount);
+
+			_UI.init(_table.getAreas());
 
 			_UI.addCards(_tempHand);
 
@@ -117,102 +131,83 @@ void Client::receiver()
 			{
 				std::cout<<_tempHand.hand[i].suit<<" "<<_tempHand.hand[i].value<<std::endl;
 			}
+
+			std::cout<<"Tota cards: "<<_tempHand.hand.size()<<std::endl;
+
+			_UI.gameStart();
+
 			break;
 
-			//Pelataan vuoro ja lÃ¤hetetÃ¤Ã¤n pelatut kortit.
-		case CARD_PLAY:
+			//Pelataan vuoro ja lähetetään pelatut kortit.
+		case TURN:
 
-			sf::Uint16 allowedAreasCount, cardLimit;
+			_UI.turnOn();
 
-			_packet>>allowedAreasCount;
+			_tempCardPacket._cards.hand.clear();
 
-			for(int i = 0; i < allowedAreasCount; i++)
-			{
-				sf::Uint16 tempArea;
-				_packet>>tempArea;
-				allowedAreas.push_back(tempArea);
-			}
-
-			_UI.setAllowedAreas(allowedAreas);
-
-			_packet>>cardLimit;
-
-			_UI.setCardLimit(cardLimit);
-
-			_tempHand.hand.clear();
-
-			_packet>>_tempHand;
-
-			_UI.setPlayableCards(_tempHand);
-
-			_tempHand.hand.clear();
+			_UI.popUp("Your turn",1);
 
 			while(!_UI.checkInput())
 			{
 				draw();
-
 			}
-			_tempHand = _UI.getSelected();
 
-			_UI.removeCards(_tempHand);
+			_tempCardPacket._cards = _UI.getSelected();
 
-			_currentArea = NOTHING;
+			_UI.removeCards(_tempCardPacket._cards);
 
-			_currentArea = _UI.getSelectedArea();
+			_tempCardPacket._area = NOTHING;
+
+			_tempCardPacket._area = _UI.getSelectedArea();
 
 			_packet.clear();
 
-			_packet<<_currentArea<<_tempHand;
+			_packet<<_tempCardPacket;
 
 			_socket.send(_packet);
-			if(_currentArea == SECONDARY_CARDS)
-				_table.addToTable(_id, _tempHand);
-			else if(_currentArea == TABLE_CENTER)
-				_table.addToTable("", _tempHand);
 
 			break;
 
 			//Otetaan vastaan toisen pelaajan pelatut kortit.
-		case TABLE_UPDATE:
-			_tempHand.hand.clear();
+		case ADD_CARDS:
 
-			_currentArea = NOTHING;
+			_tempCardPacket._cards.clear();
 
-			_packet>>_currentArea>>_tempHand;
+			_packet>>_tempCardPacket;
 
-			if(_tempHand.hand.size()>0)
-				std::cout<<_currentPlayer<<" plays: "<<_tempHand.hand[0].suit<<" "<<_tempHand.hand[0].value<<std::endl;
-			if(_currentArea == SECONDARY_CARDS)
-				_table.addToTable(_currentPlayer, _tempHand);
-			else if(_currentArea == TABLE_CENTER)
-				_table.addToTable("",_tempHand);
+			if(_tempCardPacket._cards.size()>0)
+			{
+				std::cout<<_playerIDs[_currentPlayerIndex]<<" plays"<<std::endl;
+				_table.addToTable(_tempCardPacket._area,_tempCardPacket._cards);
+			}
+
+			if(_currentPlayerIndex != _ownIndex)
+				_table.removeFromHand(_currentPlayerIndex, _tempCardPacket._cards.size());
+
+			_currentPlayerIndex++;
+				if(_currentPlayerIndex == _playerCount)
+					_currentPlayerIndex = 0;
+			break;
+
+			//Korvataan pelialueen kortit saaduilla
+		case SET_CARDS:
+
+			_tempCardPacket._cards.clear();
+
+			_packet>>_tempCardPacket;
+
+			_table.setToTable(_tempCardPacket._area,_tempCardPacket._cards);
 
 			break;
 
-			//Saadaan tieto kenen (toisen pelaajan) vuoro on.
-		case TURN_UPDATE:
-			_currentPlayer.clear();
+		//Saadan viestiä
+		case MESSAGE:
 
-			_packet>>_currentPlayer;
-			
-			std::cout<<_currentPlayer<<" turn"<<std::endl;
+			std::string temp;
 
-			break;
+			_packet>>temp;
 
-			//Saadan tieto voittajasta sekÃ¤ halutut viestit
-		case END:
-			std::string temp1,temp2;
-
-			bool victory;
-
-			_packet>>temp1>>temp2;
-
-			if(temp1 == _id)
-				victory = true;
-			else
-				victory = false;
-
-			_UI.endScreen(temp1,temp2,victory);
+			_UI.popUp(temp,3);
 
 			break;
 		}

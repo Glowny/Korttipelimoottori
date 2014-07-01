@@ -9,7 +9,6 @@ public:
 	Card getTopCard();
 	void addCards(Hand h);
 	void removeCards(Hand h);
-	void clear();
 	~PlayArea(void);
 private:
 	Hand hand;

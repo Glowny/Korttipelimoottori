@@ -57,8 +57,3 @@ void PlayArea::removeCards(Hand h)
 		
 	}
 }
-
-void PlayArea::clear()
-{
-	hand.clear();
-}

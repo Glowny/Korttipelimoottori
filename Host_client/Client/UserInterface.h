@@ -3,29 +3,27 @@
 #include "CardObject.h"
 #include "ButtonObject.h"
 #include "PopUp.h"
+#include "Table.h"
+#include "SoundManager.h"
 #include <SFML\Graphics.hpp>
 #include "DropDown.h"
+#include "Rulebook.h"
+#include <fstream>
 
 enum SELECTION_AREA
 {
-	NOTHING,
+	NO_AREA = -1,
 	TABLE_CENTER,
 	SECONDARY_CARDS,
-};
-
-enum MULTIPLAY_TYPE
-{
-	NO_MULTIPLAY,
-	SAME_VALUE,
-	SAME_SUIT,
 };
 
 class UserInterface
 {
 public:
-	UserInterface(sf::RenderWindow &window);
+	UserInterface(sf::RenderWindow &window, Table &table);
 	~UserInterface(void);
 
+	void writeRulebook();
 	void draw();
 	void addCards(Hand cards);
 	void removeCards(Hand cards);
@@ -35,18 +33,18 @@ public:
 	Hand getSelected();
 	int getSelectedArea(){return _selectedArea;}
 	void init(std::vector<sf::FloatRect>areas);
-	void setMultiplayType(int type){_mptype = type;}
-	void setAllowedAreas(std::vector<int>areas){_allowedAreas = areas;}
-	void setCardLimit(int limit){_cardLimit = limit;}
-	void setPlayableCards(Hand h){_playableCards = h;}
 	void endScreen(std::string player,std::string message,bool victory);
+	void popUp(std::string message, int time);
 	void checkTableAreas(sf::Vector2i mousepos);
 	void checkCardObjects(sf::Vector2i mousepos);
 	void checkMouseClick(sf::Vector2i mousepos);
 	void checkMouseHover(sf::Vector2i mousepos);
 	void checkButtons(sf::Vector2i mousepos);
+	void turnOn(){_ownTurn = true;}
+	void gameStart(){_gameOn = true;}
+	void readRulebook();
 private:
-	bool _endTurn;
+	bool _endTurn, _ownTurn, _gameOn;
 	int _selectedArea;
 	void lineUpCards();
 	void lineUpButtons();
@@ -55,13 +53,14 @@ private:
 	sf::RenderWindow &_window;
 	sf::Texture *_suitTexture;
 	std::vector<CardObject>_cardObjects;
+	Hand _cards;
 	std::vector<ButtonObject>_buttons;
 	sf::FloatRect _cardArea,_buttonArea;
 	std::vector<sf::RectangleShape> _borders;
 	std::vector<PopUp> _popUps;
-	int _mptype;
-	std::vector<int>_allowedAreas;
-	int _cardLimit;
-	Hand _playableCards;
-
+	Table &_table;
+	SoundManager* _soundManager;
+	Rulebook _ruleBook;
+	Rulebook _writeBook;
+	
 };

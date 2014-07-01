@@ -15,34 +15,40 @@ Dealer::~Dealer(void)
 
 void Dealer::initialize()
 {
-	deck.clear();
+	deck.hand.clear();
 
-	for (int i = 1; i < 13; i++)
+	for(int i = 1; i <= 13; i++)
 	{
 		Card h(i, Hearts);
 		Card d(i, Diamonds);
 		Card c(i, Clubs);
 		Card s(i, Spades);
 
-		deck.push_back(h);
-		deck.push_back(d);
-		deck.push_back(c);
-		deck.push_back(s);
+		deck.hand.push_back(h);
+		deck.hand.push_back(d);
+		deck.hand.push_back(c);
+		deck.hand.push_back(s);
 	}
 }
 
 void Dealer::shuffle()
 {
-	std::random_shuffle(deck.begin(), deck.end());
+	std::random_shuffle(deck.hand.begin(), deck.hand.end());
 }
 
-std::vector<Card> Dealer::deal(int i)
+Hand Dealer::deal(int i)
 {
-	std::vector<Card> hand;
-	for(int j = 0; j < i; j++)
+	Hand temp;
+	if(deck.hand.size() > 0)
 	{
-		hand.push_back(deck[0]);
-		deck.erase(deck.begin());
+		for(int j = 0; j < i; j++)
+		{
+			temp.hand.push_back(deck.hand[0]);
+			deck.hand.erase(deck.hand.begin());
+		}
 	}
-	return hand;
+	else
+		std::cout<<"Deck is empty"<<std::endl;
+
+	return temp;
 }

@@ -1,10 +1,10 @@
 #pragma once
-#include "Hand.h"
-#include "Card.h"
+#include "CardPacket.h"
 #include "Table.h"
 #include "StartScreen.h"
 #include "UserInterface.h"
 #include "Editor.h"
+#include "SoundManager.h"
 #include <string>
 #include <iostream>
 #include <vector>
@@ -12,11 +12,11 @@
 enum PACKET_ID
 {
 	WAIT,
-	GAME_START,
-	CARD_PLAY,
-	TABLE_UPDATE,
-	TURN_UPDATE,
-	END,
+	START,
+	ADD_CARDS,
+	SET_CARDS,
+	MESSAGE,
+	TURN,
 };
 
 class Client
@@ -32,9 +32,8 @@ private:
 	void initialize();
 	void receiver();
 	int _port;
-	sf::Font *_font;
 	sf::IpAddress _ip;
-	std::string _id, _currentPlayer;
+	std::string _id;
 	sf::Packet _packet;
 	sf::Uint16 _packetID, _currentArea;
 	sf::TcpSocket _socket;
@@ -42,7 +41,12 @@ private:
 	StartScreen _startScreen;
 	sf::Uint16 _playerCount;
 	Table _table;
+	CardPacket _tempCardPacket;
 	Hand _tempHand;
 	UserInterface _UI;
 	Editor _editor;
+	std::vector<int> _cardAmounts;
+	int _currentPlayerIndex;
+	sf::Uint16 _ownIndex;
+	std::vector<std::string> _playerIDs;
 };

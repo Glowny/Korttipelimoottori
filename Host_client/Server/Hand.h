@@ -39,9 +39,16 @@ public:
 	Hand(){}
 	/*~Hand(void);*/
 
-	void setHand(std::vector<Card> h){hand = h;}
-	void add(Card c){hand.push_back(c);}
-
+	void push_back(Card c){hand.push_back(c);}
+	void erase(Card c){
+		for(int i = 0; i < hand.size(); i++)
+		{
+			if(hand[i] == c)
+				hand.erase(hand.begin()+i);
+		}
+	}
+	void clear(){hand.clear();}
+	int size(){return hand.size();}
 	
 
 	std::vector<Card> hand;

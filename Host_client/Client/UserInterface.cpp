@@ -1,9 +1,11 @@
 #include "UserInterface.h"
+#include "chekkeri.h"
 
-
-UserInterface::UserInterface(sf::RenderWindow &window):_window(window)
+UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(window), _table(table)
 {
 	_endTurn = false;
+	_ownTurn = false;
+	_gameOn = false;
 	_cardFont = new sf::Font;
 	float width = _window.getSize().x;
 	float height = _window.getSize().y;
@@ -17,6 +19,69 @@ UserInterface::UserInterface(sf::RenderWindow &window):_window(window)
 
 	_buttonArea = (sf::FloatRect(width*0.75f,height*0.75f,
 		width*0.25f,height*0.25f));
+
+	_soundManager = new SoundManager;
+
+	_soundManager->playMusic();
+	_soundManager->InitialiseSound();
+
+	_ruleBook.push_back(ValueComparison(SMALLER,OWN_TO_TABLE));
+	_ruleBook.push_back(ValueComparison(SAME,OWN));
+	_ruleBook.push_back(AmountComparison(BIGGER_SAME));
+
+	//writeRulebook();
+	//readRulebook();
+
+	_ruleBook.writeToFile("vesa.dat");
+	_ruleBook.readFromFile("vesa.dat");
+
+	addButton("End Turn");
+	addButton("Mute Music");
+	addButton("Mute Sounds");
+}
+
+
+void UserInterface::writeRulebook()
+{
+	std::fstream outputFile("vesa.dat",std::ios::binary|std::ios::out|std::ifstream::trunc);
+
+	if(outputFile)
+	{
+		_writeBook.push_back(ValueComparison(SMALLER,OWN_TO_TABLE));
+		_writeBook.push_back(ValueComparison(SAME,OWN));
+		_writeBook.push_back(AmountComparison(BIGGER_SAME));
+
+		outputFile.write((char*)&_writeBook,sizeof(_writeBook));
+
+		outputFile.close();
+	}
+	
+}
+
+void UserInterface::readRulebook()
+{
+	std::fstream inputFile("vesa.dat",std::ios::binary|std::ios::in|std::ios::out);
+	std::streampos begin,end,size;
+
+	Rulebook rules;
+
+	if(inputFile)
+	{
+		begin = inputFile.tellg();
+		inputFile.seekg(0,std::ios::end);
+		end = inputFile.tellg();
+		size = (end-begin);
+		inputFile.seekg(0);
+
+		while(inputFile.peek() != EOF)
+		{
+			inputFile.read((char*)&rules,size);
+		}
+		_ruleBook = rules;
+
+		inputFile.close();
+	}
+	
 }
 
 
@@ -41,79 +106,88 @@ void UserInterface::checkMouseClick(sf::Vector2i mousepos)
 	checkTableAreas(mousepos);
 	checkCardObjects(mousepos);
 	checkButtons(mousepos);
-
 }
 
 void UserInterface::checkButtons(sf::Vector2i mousepos)
 {	
-	_endTurn = false;
 
 	if(_buttons[0].getArea().contains(sf::Vector2f(mousepos)))
 		{
 			if(_selectedArea == NOTHING)
-			{
-				_popUps.push_back(PopUp(*_cardFont,"Select Area!", sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),1));
-			}
+				popUp("Select area!", 1);
+			else if(!_ruleBook.checkRules(getSelected(),_table.getLastPlayed(_table.getAreas().size()-1)))
+				popUp("Too few cards, man!", 1);
 			else
-			_endTurn = true;
+			{
+				_soundManager->playClick();
+				_buttons[0].splode();
+				_endTurn = true;
+				_ownTurn = false;
+			}
 		}
+	if(_buttons[1].getArea().contains(sf::Vector2f(mousepos)))
+	{
+		_buttons[1].splode();
+		_soundManager->toggleMuteMusic();
+		_soundManager->playClick();
+	}
+	if(_buttons[2].getArea().contains(sf::Vector2f(mousepos)))
+	{
+		_buttons[2].splode();
+		_soundManager->toggleMuteSounds();
+		_soundManager->playClick();
+	}
 }
 
 void UserInterface::checkCardObjects(sf::Vector2i mousepos)
 {
 	for(int i = 0; i < _cardObjects.size();i++)
-	{
-		if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
 		{
-			for(int j = 0; j < _playableCards.hand.size();j++)
+			if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
 			{
-				if(_cardObjects[i] == _playableCards.hand[j])
-				{
-					if(getSelected().hand.size() >= _cardLimit)
-					{
-						for(int k = 0; k < getSelected().hand.size(); k++)
-						{
-							if(_mptype == SAME_VALUE)
-								if(_cardObjects[i].value == getSelected().hand[k].value)
-								{
-									_cardObjects[i].select();
-									break;
-								}
-						}
-					}
-					else
-						_cardObjects[i].select();
-				}
+					_cardObjects[i].select();
+					_soundManager->playClick();
+				
 			}
 		}
-	}
 }
 
 
 void UserInterface::checkTableAreas(sf::Vector2i mousepos)
 {
-	for(int i = 0; i < _allowedAreas.size(); i++)
+	if(_borders[_borders.size()-1].getGlobalBounds().contains(sf::Vector2f(mousepos)))
 		{
-			if(_allowedAreas[i] == SECONDARY_CARDS)
+			_borders[_borders.size()-1].setFillColor(sf::Color(50,50,50,50));
+			_selectedArea = _borders.size()-1;
+			_soundManager->playClick();
+
+			if(_borders.size()>1)
 			{
-				if(_borders[0].getGlobalBounds().contains(sf::Vector2f(mousepos)))
+				for(int i = 0; i < _borders.size()-1; i++)
 				{
-					_borders[4].setFillColor(sf::Color::Transparent);
-					_borders[0].setFillColor(sf::Color(50,50,50,50));
-					_selectedArea = SECONDARY_CARDS;
-				}
-			}
-				
-			if(_allowedAreas[i] == TABLE_CENTER)
-			{
-				if(_borders[4].getGlobalBounds().contains(sf::Vector2f(mousepos)))
-				{
-					_borders[0].setFillColor(sf::Color::Transparent);
-					_borders[4].setFillColor(sf::Color(50,50,50,50));
-					_selectedArea = TABLE_CENTER;
+					_borders[i].setFillColor(sf::Color::Transparent);
 				}
 			}
 		}
+
+	if(_borders.size()>1)
+	{
+		for(int i = 0; i < _borders.size(); i++)
+		{
+			if(_borders[i].getGlobalBounds().contains(sf::Vector2f(mousepos)))
+			{
+				_borders[i].setFillColor(sf::Color(50,50,50,50));
+				_selectedArea = i;
+				_soundManager->playClick();
+
+				for(int j = 0; j < _borders.size(); j++)
+				{
+					if(j != i)
+						_borders[j].setFillColor(sf::Color::Transparent);
+				}
+			}
+		}
+	}
 }
 
 void UserInterface::checkMouseHover(sf::Vector2i mousepos)
@@ -123,28 +197,32 @@ void UserInterface::checkMouseHover(sf::Vector2i mousepos)
 
 bool UserInterface::checkInput()
 {
-	sf::Event Event;
-	while(_window.pollEvent(Event))
-	{
-		switch(Event.type)
+		sf::Event Event;
+		_endTurn = false;
+		while(_window.pollEvent(Event))
 		{
-		case sf::Event::Closed:
-			_window.close();
-			break;
-
-		case sf::Event::KeyPressed:
-			if(Event.key.code == sf::Keyboard::Escape)
+			switch(Event.type)
+			{
+			case sf::Event::Closed:
 				_window.close();
 				break;
 
-		case sf::Event::MouseButtonPressed:
-			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
-				checkMouseClick(sf::Mouse::getPosition());
-		}
-		break;
+			case sf::Event::KeyPressed:
+				if(Event.key.code == sf::Keyboard::Escape)
+					_window.close();
+					break;
+
+			case sf::Event::MouseButtonPressed:
+				if(_gameOn)
+				{
+					if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
+						checkMouseClick(sf::Mouse::getPosition(_window));
+				}
+			}
+			break;
 			
-	}
-	return _endTurn;
+		}
+		return _endTurn;
 }
 
 void UserInterface::removeCards(Hand cards)
@@ -175,6 +253,7 @@ void UserInterface::addCards(Hand cards)
 	for(int i = 0; i < cards.hand.size();i++)
 	{
 		_cardObjects.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
+		_cards.hand.push_back(cards.hand[i]);
 	}
 	for(int i = 0; i < _cardObjects.size(); i++)
 	{
@@ -192,7 +271,7 @@ Hand UserInterface::getSelected()
 	{
 		if(_cardObjects[i]._selected)
 		{
-			tempHand.add(Card(_cardObjects[i].value,_cardObjects[i].suit));
+			tempHand.push_back(Card(_cardObjects[i].value,_cardObjects[i].suit));
 		}
 	}
 	return tempHand;
@@ -268,6 +347,12 @@ void UserInterface::endScreen(std::string player,std::string message,bool victor
 	std::cout<<temp<<std::endl;
 
 	_popUps.push_back(PopUp(*_cardFont,temp,sf::Vector2f(_window.getSize().x*0.5-100,_window.getSize().y-105),sf::Vector2f(200,100),60));
+}
+
+void UserInterface::popUp(std::string message, int time)
+{
+	_soundManager->playNotice();
+	_popUps.push_back(PopUp(*_cardFont, message, sf::Vector2f(_window.getSize().x*0.5f, _window.getSize().y*0.5f),sf::Vector2f(150,50),time));
 }
 
 void UserInterface::draw()

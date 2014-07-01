@@ -4,6 +4,7 @@
 #include <string>
 #include "Explosion.h"
 #include <vector>
+
 class PopUp
 {
 public:
@@ -17,8 +18,8 @@ private:
 	sf::Font *_font;
 	sf::Clock _timer;
 	sf::Clock _timer2;
-	bool wantsToDie;
 	int trigger;
 	float delay;
+	bool wantsToDie;
 	int _time;
 };

@@ -13,6 +13,17 @@ TableArea::TableArea(sf::FloatRect area,LINEUP_STYLE lineup)
 	_cardFont->loadFromFile("comic.ttf");
 }
 
+Hand TableArea::getLastPlayed()
+{
+	Hand temp;
+	
+	for(int i = 0; i < _latestCards.size();i++)
+	{
+		temp.push_back(Card(_latestCards[i].value,_latestCards[i].suit));
+	}
+	return temp;
+}
+
 void TableArea::lineUp()
 { 
 	if(_style == POTATO)
@@ -82,6 +93,16 @@ void TableArea::lineUp()
 					_cardObjects[i].setPosition(sf::Vector2f(_area.left+centerx-0.5f*_cardObjects[i].getArea().width,(_area.top+_cardObjects[i].getArea().height)));
 				}
 			}
+
+			for(int i = 0; i < _latestCards.size();i++)
+			{
+				_latestCards[i].setPosition(sf::Vector2f(_area.left+centerx-0.5f*_cardObjects[i].getArea().width+i*0.5f*_cardObjects[i].getArea().width,_area.top));
+				if(_area.top == 5)
+				{
+					_latestCards[i].setRotation(180);
+					_latestCards[i].setPosition(sf::Vector2f(_area.left+centerx-0.5f*_cardObjects[i].getArea().width+i*0.5f*_cardObjects[i].getArea().width,(_area.top+_cardObjects[i].getArea().height)));
+				}
+			}
 		
 		}
 		else
@@ -104,6 +125,23 @@ void TableArea::lineUp()
 				
 				}
 			}
+
+			for(int i = 0; i < _latestCards.size();i++)
+			{
+			
+				if(_area.left == 5)
+					{
+					_latestCards[i].setRotation(90);
+					_latestCards[i].setPosition(sf::Vector2f(_area.left+_area.width,_area.top+i*_area.height));
+				
+					}
+				else
+				{
+					_latestCards[i].setRotation(270);
+					_latestCards[i].setPosition(sf::Vector2f(_area.left,_area.top+i*_area.height));
+				
+				}
+			}
 		}
 
 	}
@@ -113,11 +151,19 @@ void TableArea::lineUp()
 
 void TableArea::draw(sf::RenderWindow &window)
 {
-
-
-	for(int i = 0; i < _cardObjects.size(); i++)
+	if(_latestCards.size() == 0)
 	{
-		_cardObjects[i].draw(window);
+		for(int i = 0; i < _cardObjects.size(); i++)
+		{
+			_cardObjects[i].draw(window);
+		}
+	}
+	else
+	{
+		for(int i = 0; i < _latestCards.size(); i++)
+		{
+			_latestCards[i].draw(window);
+		}
 	}
 }
 
@@ -145,6 +191,20 @@ void TableArea::removeCards(Hand cards)
 	lineUp();
 }
 
+void TableArea::removeCards(int cards)
+{
+	for(int i = 0; i < cards; i++)
+	{
+		_cardObjects.pop_back();
+	}
+	lineUp();
+}
+
+void TableArea::clearArea()
+{
+	_cardObjects.clear();
+}
+
 void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 {
 
@@ -152,9 +212,55 @@ void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 	cardSize.x*=0.075f;
 	cardSize.y*=0.15f;
 
+	if(_style == PILE)
+		_latestCards.clear();
+
 	for(int i = 0; i < cards.hand.size();i++)
 	{
 		_cardObjects.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
+		if(_style == PILE)
+			_latestCards.push_back(CardObject(cards.hand[i],*_suitTexture,*_cardFont));
+	}
+
+	for(int i = 0; i < _cardObjects.size();i++)
+	{
+
+	if(_area.width > _area.height)
+	{
+	_cardObjects[i].setSize(cardSize);
+	}
+
+	else
+	_cardObjects[i].setSize(cardSize);
+	}
+
+	if(_style == PILE)
+	{
+		for(int i = 0; i < _latestCards.size();i++)
+		{
+
+		if(_area.width > _area.height)
+		{
+		_latestCards[i].setSize(cardSize);
+		}
+
+		else
+		_latestCards[i].setSize(cardSize);
+		}
+	}
+
+	lineUp();
+}
+
+void TableArea::addCards(int cards, sf::RenderWindow &window)
+{
+	sf::Vector2f cardSize = sf::Vector2f(window.getSize().x,window.getSize().y);
+	cardSize.x*=0.0375f;
+	cardSize.y*=0.075f;
+
+	for(int i = 0; i < cards;i++)
+	{
+		_cardObjects.push_back(CardObject(Card(),*_suitTexture,*_cardFont));
 	}
 
 	for(int i = 0; i < _cardObjects.size();i++)
@@ -170,6 +276,18 @@ void TableArea::addCards(Hand cards, sf::RenderWindow &window)
 	}
 
 	lineUp();
+}
+
+Hand TableArea::getCards()
+{
+	Hand tempH;
+
+	for(int i = 0; i < _cardObjects.size(); i++)
+	{
+		tempH.hand.push_back(Card(_cardObjects[i].value, _cardObjects[i].suit));
+	}
+
+	return tempH;
 }
 
 TableArea::~TableArea(void)

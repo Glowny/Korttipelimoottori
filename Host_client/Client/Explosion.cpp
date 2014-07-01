@@ -12,7 +12,7 @@ Explosion::Explosion(sf::Vector2f pos)
 	_particles.append(sf::Vertex(pos,sf::Color(255,255,0,30)));
 	
 	
-	_particles.setPrimitiveType(sf::PrimitiveType::TrianglesFan);
+	_particles.setPrimitiveType(sf::PrimitiveType::Lines);
 
 	for(int i = 0; i < _particles.getVertexCount();i++)
 	 {

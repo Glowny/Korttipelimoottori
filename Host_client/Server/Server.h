@@ -1,30 +1,15 @@
 #pragma once
 #include "SFML\Network.hpp"
-#include "Dealer.h"
-#include "Player.h"
+#include "CardPacket.h"
 
 enum PACKET_ID
 {
 	WAIT,
-	GAME_START,
-	CARD_PLAY,
-	TABLE_UPDATE,
-	TURN_UPDATE,
-	END,
-};
-
-enum SELECTION_AREA
-{
-	NOTHING,
-	TABLE_CENTER,
-	SECONDARY_CARDS,
-};
-
-enum MULTIPLAY_TYPE
-{
-	NO_MULTIPLAY,
-	SAME_VALUE,
-	SAME_SUIT,
+	START,
+	ADD_CARDS,
+	SET_CARDS,
+	MESSAGE,
+	TURN,
 };
 
 class Server
@@ -32,35 +17,23 @@ class Server
 public:
 	Server(void);
 	~Server(void);
-	void initialize(int playercount);
-	void setUp(int startingHand);
-	void processTurn();
+	std::vector<std::string> initialize(int playercount);
 	void reset();
-	Card getTopCard(SELECTION_AREA area);
-	Hand getPlayerHand(int playerNumber){return _players[playerNumber].getHand();}
-	void setPlayableCards(SELECTION_AREA area, int cardlimit, Hand cards);
-	void setMultiplayType(MULTIPLAY_TYPE type){_mptype = type;}
-	void winner();
-	void winner(std::string customMessage);
-	std::vector<Player> getPlayers(){return _players;}
-	Player getCurrentPlayer(){return _currentPlayer;}
-	Player getNextPlayer();
-	Player getPreviousPlayer();
+	void send(std::string message);
+	void send(CardPacket cards);
+	void send(int i, CardPacket cards);
+	void send(int i, std::string message);
+	void send(int i, int areas, Hand cards, std::vector<std::string> playerIDs, std::vector<sf::Uint16> cardAmounts);
+	void sendReplacement(CardPacket cards);
+	void giveTurn(int i);
+	CardPacket receive(int i);
+	bool checkConnection(){return _connectionOK;}
 private:
-	sf::Uint16 _playerCount;
+	int _port;
 	sf::TcpListener _listener;
 	sf::SocketSelector _selector;
-	Dealer _dealer;
 	std::vector<sf::TcpSocket*> _clients;
-	std::vector<Player> _players;
-	Player _currentPlayer;
-	std::vector<PlayArea> _playAreas;
-	std::vector<int> _allowedAreas;
-	sf::Uint16 _cardLimit;
-	Hand _tempHand;
-	sf::Uint16 _packetID;
 	sf::Packet _packet;
-	int _port;
-	int _startingHand;
-	int _mptype;
+	sf::Uint16 _packetID;
+	bool _connectionOK;
 };
