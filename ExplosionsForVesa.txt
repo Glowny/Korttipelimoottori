@@ -135,6 +135,15 @@ std::vector<MouseExplosion>_explosions;
 
 Vesan_UI_jutut.cpp
 
+for(int i = 0; i < _explosions.size();)
+{
+	if(_explosions[i].update())
+		i++;
+	else
+		_explosions.erase(_explosions.begin()+i);
+}
+
+
 
 if(hiiri on painettuna ja kortti selectattuna)
 {
