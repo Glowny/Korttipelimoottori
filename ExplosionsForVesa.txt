@@ -1,0 +1,77 @@
+MouseExplosion.h
+
+#pragma once
+#include "SFML\Graphics.hpp"
+class MouseExplosion 
+{
+public:
+	MouseExplosion(sf::Vector2f pos,sf::Color color1,sf::Color color2);
+	bool update();
+	void checkWindowCollision(sf::RenderWindow &window);
+	~MouseExplosion(void);
+	void setNewSpeed(sf::Vector2f speed,int index){_speeds[index] = speed;}
+	int getParticleAmount(){return _particles.getVertexCount();}
+	void draw(sf::RenderWindow &window);
+
+private:
+	sf::Clock _timer2;
+	sf::Clock _timer;
+	sf::VertexArray _particles;
+	std::vector<sf::Vector2f>_speeds;
+	sf::Clock _timer3;
+	int trigger;
+};
+
+MouseExplosion.cpp
+
+#pragma once
+#include "SFML\Graphics.hpp"
+class MouseExplosion 
+{
+public:
+	MouseExplosion(sf::Vector2f pos,sf::Color color1,sf::Color color2);
+	bool update();
+	void checkWindowCollision(sf::RenderWindow &window);
+	~MouseExplosion(void);
+	void setNewSpeed(sf::Vector2f speed,int index){_speeds[index] = speed;}
+	int getParticleAmount(){return _particles.getVertexCount();}
+	void draw(sf::RenderWindow &window);
+
+private:
+	sf::Clock _timer2;
+	sf::Clock _timer;
+	sf::VertexArray _particles;
+	std::vector<sf::Vector2f>_speeds;
+	sf::Clock _timer3;
+	int trigger;
+};
+
+Vesan_UI_jutut.h
+
+#include "MouseExplosion.h"
+
+private:
+std::vector<MouseExplosion>_explosions;
+
+Vesan_UI_jutut.cpp
+
+
+if(hiiri on painettuna ja kortti selectattuna)
+{
+  if(_timer.getElapsedTime().asSeconds()>0.009)
+  	{	
+  	  _explosions.push_back(MouseExplosion(sf::Vector2f(sf::Mouse::getPosition(_window)),sf::Color(255,255,255,20),sf::Color(255,255,255,20)));
+  		_timer.restart();
+  	}
+}
+
+draw()
+{
+	for(int i = 0; i < _explosions.size();i++)
+	{
+		_explosions[i].draw(_window);
+	}
+
+}
+
+
