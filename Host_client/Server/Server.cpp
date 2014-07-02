@@ -124,6 +124,18 @@ void Server::sendReplacement(CardPacket cp)
 	}
 }
 
+void Server::sendRulebook(std::string rulesData)
+{
+	_packet.clear();
+	_packetID = RULES;
+	_packet<<_packetID<<rulesData;
+
+	for(int i = 0; i < _clients.size(); i++)
+	{
+	_clients[i]->send(_packet);
+	}
+}
+
 CardPacket Server::receive(int i)
 {
 	CardPacket temp;

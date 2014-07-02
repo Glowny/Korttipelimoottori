@@ -23,7 +23,7 @@ public:
 	UserInterface(sf::RenderWindow &window, Table &table);
 	~UserInterface(void);
 
-	void writeRulebook();
+	void writeRulebook(std::string rulesData);
 	void draw();
 	void addCards(Hand cards);
 	void removeCards(Hand cards);

@@ -17,6 +17,7 @@ enum PACKET_ID
 	SET_CARDS,
 	MESSAGE,
 	TURN,
+	RULES,
 };
 
 class Client
@@ -49,4 +50,5 @@ private:
 	int _currentPlayerIndex;
 	sf::Uint16 _ownIndex;
 	std::vector<std::string> _playerIDs;
+	std::string _rulesData;
 };

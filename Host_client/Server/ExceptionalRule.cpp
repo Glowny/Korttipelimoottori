@@ -21,8 +21,6 @@ EXCEPTION_OUTCOME ExceptionalRule::check(Hand playedCards)
 				return _outcome;
 		}
 		break;
-	default:
-		return NOTHING;
-		break;
 	}
+	return NOTHING;
 }

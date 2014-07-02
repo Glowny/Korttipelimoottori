@@ -4,7 +4,7 @@ class ValueComparison
 {
 public:
 	ValueComparison(COMPARISON_TYPE type,COMPARISON_TARGET target);
-	ValueComparison(){_type = EMPTY_COMPARISON;}
+	ValueComparison(){}
 	~ValueComparison(void);
 	bool check(Hand selectedCards,Hand targetCards);
 	COMPARISON_TYPE _type;

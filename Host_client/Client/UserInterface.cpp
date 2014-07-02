@@ -25,63 +25,33 @@ UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(win
 	_soundManager->playMusic();
 	_soundManager->InitialiseSound();
 
-	_ruleBook.push_back(ValueComparison(SMALLER,OWN_TO_TABLE));
-	_ruleBook.push_back(ValueComparison(SAME,OWN));
-	_ruleBook.push_back(AmountComparison(BIGGER_SAME));
-
-	//writeRulebook();
-	//readRulebook();
-
-	_ruleBook.writeToFile("vesa.dat");
-	_ruleBook.readFromFile("vesa.dat");
-
 	addButton("End Turn");
 	addButton("Mute Music");
 	addButton("Mute Sounds");
 }
 
 
-void UserInterface::writeRulebook()
+void UserInterface::writeRulebook(std::string rulesData)
 {
 	std::fstream outputFile("vesa.dat",std::ios::binary|std::ios::out|std::ifstream::trunc);
+	
 
+	char c;
 	if(outputFile)
 	{
-		_writeBook.push_back(ValueComparison(SMALLER,OWN_TO_TABLE));
-		_writeBook.push_back(ValueComparison(SAME,OWN));
-		_writeBook.push_back(AmountComparison(BIGGER_SAME));
-
-		outputFile.write((char*)&_writeBook,sizeof(_writeBook));
+		for(int i = 0; i < rulesData.size();i++)
+		{
+		c=rulesData[i];
+		outputFile.write(&c,(sizeof(char)));
+		}
 
 		outputFile.close();
 	}
-	
 }
 
 void UserInterface::readRulebook()
 {
-	std::fstream inputFile("vesa.dat",std::ios::binary|std::ios::in|std::ios::out);
-	std::streampos begin,end,size;
-
-	Rulebook rules;
-
-	if(inputFile)
-	{
-		begin = inputFile.tellg();
-		inputFile.seekg(0,std::ios::end);
-		end = inputFile.tellg();
-		size = (end-begin);
-		inputFile.seekg(0);
-
-		while(inputFile.peek() != EOF)
-		{
-			inputFile.read((char*)&rules,size);
-		}
-		_ruleBook = rules;
-
-		inputFile.close();
-	}
-	
+	_ruleBook.readFromFile("vesa.dat");	
 }
 
 

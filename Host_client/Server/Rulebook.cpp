@@ -46,33 +46,36 @@ void Rulebook::writeToFile(std::string name)
 {
 
 	std::fstream outputFile(name,std::ios::binary|std::ios::out|std::ifstream::trunc);
-
-	for(int i = 0;i < _valueRules.size();i++)
-	{
-		_valueTable[i] = _valueRules[i];
-	}
-	for(int i = 0; i < _amountRules.size();i++)
-	{
-		_amountTable[i]= _amountRules[i];
-	}
-	for(int i = 0; i < _exceptionRules.size();i++)
-	{
-		_exceptionTable[i]= _exceptionRules[i];
-	}
-
 	if(outputFile)
 	{
-		
-		outputFile.write((char*)&_valueTable,sizeof(_valueTable));
-		outputFile.write((char*)&_amountTable,sizeof(_amountTable));
-		outputFile.write((char*)&_exceptionTable, sizeof(_exceptionTable));
-		outputFile.write((char*)&_startingRule,sizeof(_startingRule));
 
-		outputFile.close();
+	int valueSize = _valueRules.size();
+	outputFile.write((char*)&valueSize,sizeof(int));
+	for(int i = 0;i < _valueRules.size();i++)
+	{
+		outputFile.write((char*)&_valueRules[i],sizeof(ValueComparison));
+	}
+
+	int amountSize = _amountRules.size();
+	outputFile.write((char*)&amountSize,sizeof(int));
+	for(int i = 0; i < _amountRules.size();i++)
+	{
+		outputFile.write((char*)&_amountRules[i],sizeof(AmountComparison));
+	}
+
+	int exceptionalSize = _exceptionRules.size();
+	outputFile.write((char*)&exceptionalSize,sizeof(int));
+	for(int i = 0; i < _exceptionRules.size();i++)
+	{
+		outputFile.write((char*)&_exceptionRules[i],sizeof(ExceptionalRule));
+	}
+
+	outputFile.write((char*)&_startingRule,sizeof(StartingRule));
+
+	outputFile.close();
 	}
 	_valueRules.clear();
 	_amountRules.clear();
-	_exceptionRules.clear();
 	_startingRule = StartingRule();
 
 }
@@ -84,34 +87,43 @@ void Rulebook::readFromFile(std::string name)
 	if(inputFile)
 	{
 
-		while(inputFile.peek() != EOF)
-		{
-		inputFile.read((char*)&_valueTable,sizeof(_valueTable));
-		inputFile.read((char*)&_amountTable,sizeof(_amountTable));
-		inputFile.read((char*)&_exceptionTable, sizeof(_exceptionTable));
-		inputFile.read((char*)&_startingRule,sizeof(_startingRule));
-		
-		}
+	while(inputFile.peek() != EOF)
+	{
 
-		
-		for(int i = 0; i < 100;i++)
-		{
-			if(_valueTable[i]._type != EMPTY_COMPARISON)
-			_valueRules.push_back(_valueTable[i]);
-		}
-		for(int i = 0; i < 100;i++)
-		{
-			if(_amountTable[i]._type != EMPTY_COMPARISON)
-				_amountRules.push_back(_amountTable[i]);
-		}
-		for(int i = 0; i < 100;i++)
-		{
-			if(_exceptionTable[i]._type != EMPTY_EXCEPTION)
-				_exceptionRules.push_back(_exceptionTable[i]);
-		}
+	int valueSize;
+	inputFile.read((char*)&valueSize,sizeof(int));
 
+	for(int i = 0;i < valueSize;i++)
+	{
+		ValueComparison vc;
+		inputFile.read((char*)&vc,sizeof(ValueComparison));
+		_valueRules.push_back(vc);
+	}
 
-		inputFile.close();
+	int amountSize;
+	inputFile.read((char*)&amountSize,sizeof(int));
+
+	for(int i = 0; i < amountSize;i++)
+	{
+		AmountComparison ac;
+		inputFile.read((char*)&ac,sizeof(AmountComparison));
+		_amountRules.push_back(ac);
+	}
+
+	int exceptionalSize;
+	inputFile.read((char*)&exceptionalSize,sizeof(int));
+
+	for(int i = 0; i < exceptionalSize;i++)
+	{
+		ExceptionalRule er;
+		inputFile.read((char*)&er,sizeof(ExceptionalRule));
+		_exceptionRules.push_back(er);
+	}
+
+	inputFile.read((char*)&_startingRule,sizeof(StartingRule));
+
+	inputFile.close();
+	}
 	}
 
 }

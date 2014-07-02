@@ -92,6 +92,16 @@ void Rulebook::readFromFile(std::string name)
 		_amountRules.push_back(ac);
 	}
 
+	int exceptionalSize;
+	inputFile.read((char*)&exceptionalSize,sizeof(int));
+
+	for(int i = 0; i < exceptionalSize;i++)
+	{
+		ExceptionalRule er;
+		inputFile.read((char*)&er,sizeof(ExceptionalRule));
+		_exceptionRules.push_back(er);
+	}
+
 	inputFile.read((char*)&_startingRule,sizeof(StartingRule));
 
 	inputFile.close();
@@ -108,6 +118,11 @@ void Rulebook::push_back(AmountComparison rule)
 void Rulebook::push_back(ValueComparison rule)
 {
 	_valueRules.push_back(rule);
+}
+
+void Rulebook::push_back(ExceptionalRule rule)
+{
+	_exceptionRules.push_back(rule);
 }
 
 void Rulebook::push_back(StartingRule rule)

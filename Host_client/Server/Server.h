@@ -10,6 +10,7 @@ enum PACKET_ID
 	SET_CARDS,
 	MESSAGE,
 	TURN,
+	RULES,
 };
 
 class Server
@@ -24,6 +25,7 @@ public:
 	void send(int i, CardPacket cards);
 	void send(int i, std::string message);
 	void send(int i, int areas, Hand cards, std::vector<std::string> playerIDs, std::vector<sf::Uint16> cardAmounts);
+	void sendRulebook(std::string rulesData);
 	void sendReplacement(CardPacket cards);
 	void giveTurn(int i);
 	CardPacket receive(int i);

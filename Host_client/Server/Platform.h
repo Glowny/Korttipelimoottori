@@ -15,9 +15,10 @@ public:
 	void setUp(int playerAmount, bool frontAreas);
 	void setUp(int playerAmount,int startingHandSize);
 	void setUp(int playerAmount,int startingHandSize, bool frontAreas);
+	void sendRulebook();
 	CardPacket processTurn();
 	void createArea();
-	void loadRuleBook();
+	void loadRulebook();
 	void playCards(int i, Hand h);
 	Hand getAreaCards(int i);
 	void removeAreaCards(int i, Hand h);
@@ -35,5 +36,5 @@ private:
 	std::vector<PlayArea> _areas;
 	Hand _discard;
 	Rulebook _ruleBook;
-
+	std::string _ruleBookData;
 };

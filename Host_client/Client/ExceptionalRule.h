@@ -1,9 +1,9 @@
 #pragma once
 #include "rule.h"
-class ExceptionalRule :
-	public Rule
+class ExceptionalRule
 {
 public:
+	ExceptionalRule(){}
 	ExceptionalRule(EXCEPTION_TYPE type, EXCEPTION_OUTCOME outcome){_type = type; _outcome = outcome;}
 	ExceptionalRule(EXCEPTION_TYPE type, Card specifiedCard, EXCEPTION_OUTCOME outcome)
 	{_type = type; _specifiedCard = specifiedCard; _outcome = outcome;}

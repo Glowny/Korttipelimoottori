@@ -4,7 +4,7 @@ class AmountComparison
 {
 public:
 	AmountComparison(COMPARISON_TYPE type);
-	AmountComparison(){_type = EMPTY_COMPARISON;};
+	AmountComparison(){};
 	~AmountComparison();
 	bool check(Hand selectedCards,Hand tableCards);
 	COMPARISON_TYPE _type;

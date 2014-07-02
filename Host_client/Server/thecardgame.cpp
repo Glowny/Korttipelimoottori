@@ -3,7 +3,7 @@
 
 int main()
 {
-	int players = 1;
+	int players = 2;
 	Server server;
 	Platform platform(server);
 

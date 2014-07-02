@@ -23,9 +23,6 @@ public:
 	void readFromFile(std::string name);
 private:	
 	std::vector<ValueComparison> _valueRules;
-	ValueComparison _valueTable[100];
-	AmountComparison _amountTable[100];
-	ExceptionalRule _exceptionTable[100];
 	std::vector<AmountComparison> _amountRules;
 	std::vector<ExceptionalRule> _exceptionRules;
 	StartingRule _startingRule;

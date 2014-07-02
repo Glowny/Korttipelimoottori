@@ -13,18 +13,16 @@ Platform::~Platform(void)
 
 void Platform::DEBUG_writeFunction()
 {
-	std::ofstream outputFile("vesa.dat",std::ios::binary|std::ios::out|std::ifstream::trunc);
-
-	if(outputFile)
-	{
 		_ruleBook.push_back(ValueComparison(SMALLER,OWN_TO_TABLE));
 		_ruleBook.push_back(ValueComparison(SAME,OWN));
 		_ruleBook.push_back(AmountComparison(BIGGER_SAME));
+		_ruleBook.push_back(ExceptionalRule(EMPTY_PLAY, NOTHING));
+		_ruleBook.push_back(ExceptionalRule(SPECIFIED_CARD,Card(10,0) ,CLEAR_TABLE));
+		_ruleBook.push_back(ExceptionalRule(SPECIFIED_CARD,Card(10,1) ,CLEAR_TABLE));
+		_ruleBook.push_back(ExceptionalRule(SPECIFIED_CARD,Card(10,2) ,CLEAR_TABLE));
+		_ruleBook.push_back(ExceptionalRule(SPECIFIED_CARD,Card(10,3) ,CLEAR_TABLE));
 
-		outputFile.write((char*)&_ruleBook,sizeof(_ruleBook));
-
-		outputFile.close();
-	}
+		_ruleBook.writeToFile("vesa.dat");
 }
 
 void Platform::DEBUG_readFunction()
@@ -48,12 +46,26 @@ void Platform::reset()
 	_dealer.initialize();
 	_players.clear();
 	_server.reset();
+	_areas.clear();
 }
 
-void Platform::loadRuleBook()
+void Platform::loadRulebook()
 {
-	//_ruleBook = tiedosto.dat
-	_ruleBook.init(_players);
+	_ruleBook.readFromFile("vesa.dat");
+
+	std::fstream inputFile("vesa.dat",std::ios::binary|std::ios::in);
+
+	_ruleBookData = "";
+
+	while(inputFile.peek() != EOF)
+	{
+		char c;
+
+		inputFile.read(&c,sizeof(char));
+		_ruleBookData+=c;
+	}
+
+	_currentPlayerIndex = _ruleBook.init(_players);
 
 }
 void Platform::setUp(int playerAmount)
@@ -143,8 +155,6 @@ void Platform::setUp(int playerAmount,int startingHandSize)
 	_dealer.shuffle();
 
 	DEBUG_writeFunction();
-	DEBUG_readFunction();
-	_ruleBook;
 
 	std::vector<std::string> playerIDs = _server.initialize(playerAmount);
 
@@ -155,7 +165,7 @@ void Platform::setUp(int playerAmount,int startingHandSize)
 
 	_areas.push_back(PlayArea());
 
-	loadRuleBook();
+	loadRulebook();
 
 	for(int i = 0; i < _players.size(); i++)
 	{
@@ -168,6 +178,8 @@ void Platform::setUp(int playerAmount,int startingHandSize)
 	{
 		_cardAmounts.push_back(_players[i].getHand().hand.size());
 	}
+
+	_server.sendRulebook(_ruleBookData);
 
 	for(int i = 0; i < _players.size(); i++)
 	{
@@ -227,29 +239,33 @@ CardPacket Platform::processTurn()
 
 	_players[_currentPlayerIndex].removeCards(temp._cards);
 
-	_areas[temp._area].addCards(temp._cards);
-
-	EXCEPTION_OUTCOME exception = _ruleBook.checkExceptionRules(temp._cards);
-
-	switch(exception)
+	if(temp._area >= 0 && temp._area < _areas.size())
 	{
-	case NOTHING:
-	_currentPlayerIndex++;
+		_areas[temp._area].addCards(temp._cards);
 
-	if(_currentPlayerIndex == _players.size())
-		_currentPlayerIndex = 0;
-		break;
-	case CLEAR_TABLE:
-		for(int i = 0; i < temp._cards.size(); i++)
+		EXCEPTION_OUTCOME exception = _ruleBook.checkExceptionRules(temp._cards);
+
+		switch(exception)
 		{
-		_discard.push_back(temp._cards.hand[i]);
+		case NOTHING:
+		_currentPlayerIndex++;
+
+		if(_currentPlayerIndex == _players.size())
+			_currentPlayerIndex = 0;
+			break;
+		case CLEAR_TABLE:
+			for(int i = 0; i < temp._cards.size(); i++)
+			{
+			_discard.push_back(temp._cards.hand[i]);
+			}
+			_areas[temp._area].clear();
+			Hand tempH;
+			CardPacket temp2(temp._area, tempH);
+			_server.sendReplacement(temp2);
+			return temp2;
+			break;
 		}
-		_areas[temp._area].clear();
-		break;
 	}
-
-	
-
 	return temp;
 }
 
