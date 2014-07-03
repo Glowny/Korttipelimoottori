@@ -11,6 +11,12 @@ Table::Table(sf::RenderWindow &window):_window(window)
 	_handAreas.push_back(TableArea(sf::FloatRect(size.x-borderPixels,0.25f*size.y,borderPixels,0.25*size.y),POTATO));
 }
 
+Hand Table::getLastPlayed(int index)
+{
+	return _tableAreas[index].getLastPlayed();
+
+}
+
 void Table::createAreas(int areaCount)
 {
 	sf::Vector2u size = _window.getSize();

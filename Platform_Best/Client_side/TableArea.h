@@ -22,6 +22,7 @@ public:
 	void clearArea();
 	void draw(sf::RenderWindow &window);
 	sf::FloatRect _area;
+	Hand getLastPlayed();
 	Hand getCards();
 private:
 	LINEUP_STYLE _style;

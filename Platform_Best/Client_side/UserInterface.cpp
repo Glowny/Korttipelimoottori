@@ -3,6 +3,7 @@
 
 UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(window), _table(table)
 {
+	_selection = false;
 	_endTurn = false;
 	_ownTurn = false;
 	_gameOn = false;
@@ -28,6 +29,31 @@ UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(win
 	addButton("End Turn");
 	addButton("Mute Music");
 	addButton("Mute Sounds");
+	addButton("Line up Cards");
+}
+
+
+void UserInterface::writeRulebook(std::string rulesData)
+{
+	std::fstream outputFile("vesa.dat",std::ios::binary|std::ios::out|std::ifstream::trunc);
+	
+
+	char c;
+	if(outputFile)
+	{
+		for(int i = 0; i < rulesData.size();i++)
+		{
+		c=rulesData[i];
+		outputFile.write(&c,(sizeof(char)));
+		}
+
+		outputFile.close();
+	}
+}
+
+void UserInterface::readRulebook()
+{
+	_ruleBook.readFromFile("vesa.dat");	
 }
 
 
@@ -49,10 +75,9 @@ void UserInterface::init(std::vector<sf::FloatRect> areas)
 
 void UserInterface::checkMouseClick(sf::Vector2i mousepos)
 {
-	checkTableAreas(mousepos);
-	checkCardObjects(mousepos);
+	/*checkTableAreas(mousepos);*/
+	//checkCardObjects(mousepos);
 	checkButtons(mousepos);
-
 }
 
 void UserInterface::checkButtons(sf::Vector2i mousepos)
@@ -62,7 +87,7 @@ void UserInterface::checkButtons(sf::Vector2i mousepos)
 		{
 			if(_selectedArea == NOTHING)
 				popUp("Select area!", 1);
-			else if(!turnEndCheck(getSelected(), _table))
+			else if(!_ruleBook.checkRules(getSelected(),_table.getLastPlayed(_table.getAreas().size()-1)))
 				popUp("Too few cards, man!", 1);
 			else
 			{
@@ -74,49 +99,94 @@ void UserInterface::checkButtons(sf::Vector2i mousepos)
 		}
 	if(_buttons[1].getArea().contains(sf::Vector2f(mousepos)))
 	{
+		_buttons[1].splode();
 		_soundManager->toggleMuteMusic();
 		_soundManager->playClick();
 	}
 	if(_buttons[2].getArea().contains(sf::Vector2f(mousepos)))
 	{
+		_buttons[2].splode();
 		_soundManager->toggleMuteSounds();
 		_soundManager->playClick();
+	}
+	if(_buttons[3].getArea().contains(sf::Vector2f(mousepos)))
+	{
+		_buttons[3].splode();
+		UserInterface::lineUpCards();
 	}
 }
 
 void UserInterface::checkCardObjects(sf::Vector2i mousepos)
 {
+
+	if (_selection == false)
+	{
 	for(int i = 0; i < _cardObjects.size();i++)
 		{
 			if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
 			{
-				if(clickCheck(Card(_cardObjects[i].value, _cardObjects[i].suit),_cards,getSelected(),_table) && _ownTurn)
-				{
-					_cardObjects[i].select();
-					_soundManager->playClick();
-				}
+				_selectedCard = i;
+				_selection = true;
+				
+				_cardObjects[i].setOrigin(sf::Vector2f(sf::Vector2f(mousepos).x-_cardObjects[i].getArea().left, sf::Vector2f(mousepos).y-_cardObjects[i].getArea().top));
+				_cardObjects[i].setPosition(sf::Vector2f(sf::Vector2f(mousepos).x,sf::Vector2f(mousepos).y));
+				
+				break;
 			}
 		}
-}
+	}
+	else
+	{
+		_soundManager->playCardAir();
+		_cardObjects[_selectedCard].setPosition(sf::Vector2f(sf::Mouse::getPosition(_window).x,sf::Mouse::getPosition(_window).y));
+		if(_timer.getElapsedTime().asSeconds()>0.009)
+  	{	
+  	  _explosions.push_back(MouseExplosion(sf::Vector2f(sf::Mouse::getPosition(_window)),sf::Color(255,255,255,20),sf::Color(255,255,255,20)));
+  		_timer.restart();
+  	}
+	}
+
+	/*for(int i = 0; i < _cardObjects.size();i++)
+		{
+			if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
+			{
+					_cardObjects[i].select();
+					_soundManager->playClick();
+				
+			}
+		}*/
+	}
 
 
 void UserInterface::checkTableAreas(sf::Vector2i mousepos)
 {
-	if(_borders[_borders.size()-1].getGlobalBounds().contains(sf::Vector2f(mousepos)))
+	if (_cardObjects.size() != 0)
+	{
+		for(int j = 0; j < _cardObjects.size(); j++)
 		{
-			_borders[_borders.size()-1].setFillColor(sf::Color(50,50,50,50));
-			_selectedArea = _borders.size()-1;
-			_soundManager->playClick();
-
-			if(_borders.size()>1)
+		
+	
+			/*if(_borders[_borders.size()-1].getGlobalBounds().contains(sf::Vector2f(mousepos)))*/
+			if(_borders[_borders.size()-1].getGlobalBounds().intersects(_cardObjects[j].getArea()))
 			{
-				for(int i = 0; i < _borders.size()-1; i++)
+				_borders[_borders.size()-1].setFillColor(sf::Color(50,50,50,50));
+				_selectedArea = _borders.size()-1;
+				_cardObjects[j].select(true);
+
+				if(_borders.size()>1)
 				{
-					_borders[i].setFillColor(sf::Color::Transparent);
+					for(int i = 0; i < _borders.size()-1; i++)
+					{
+						_borders[i].setFillColor(sf::Color::Transparent);
+					}
 				}
 			}
+			else
+			{
+				_cardObjects[j].select(false);
+			}
 		}
-
+	}
 	if(_borders.size()>1)
 	{
 		for(int i = 0; i < _borders.size(); i++)
@@ -146,8 +216,11 @@ bool UserInterface::checkInput()
 {
 		sf::Event Event;
 		_endTurn = false;
+		
 		while(_window.pollEvent(Event))
 		{
+
+			
 			switch(Event.type)
 			{
 			case sf::Event::Closed:
@@ -162,13 +235,36 @@ bool UserInterface::checkInput()
 			case sf::Event::MouseButtonPressed:
 				if(_gameOn)
 				{
-					if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
-						checkMouseClick(sf::Mouse::getPosition(_window));
+					checkMouseClick(sf::Mouse::getPosition(_window));
 				}
 			}
+			
 			break;
 			
 		}
+			
+				for(int i = 0; i < _explosions.size();)
+					{
+						if(_explosions[i].update())
+							i++;
+						else
+							_explosions.erase(_explosions.begin()+i);
+					}
+			checkTableAreas(sf::Mouse::getPosition(_window));
+			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
+					{
+						checkCardObjects(sf::Mouse::getPosition(_window));
+					}
+			
+			else if(_selection == true)
+			{
+			_soundManager->stopCardAir();
+			_selection = false;
+			_cardObjects[_selectedCard].setPosition(sf::Vector2f(_cardObjects[_selectedCard].getArea().left, _cardObjects[_selectedCard].getArea().top));
+			_cardObjects[_selectedCard].setOrigin(sf::Vector2f(0,0));
+			
+			}
+			
 		return _endTurn;
 }
 
@@ -192,7 +288,6 @@ void UserInterface::removeCards(Hand cards)
 		if(!erased)
 			i++;
 	}
-	lineUpCards();
 }
 
 void UserInterface::addCards(Hand cards)
@@ -322,5 +417,9 @@ void UserInterface::draw()
 	{
 		if(_popUps[i].draw(_window))
 			_popUps.erase(_popUps.begin()+i);
+	}
+	for(int i = 0; i < _explosions.size();i++)
+	{
+		_explosions[i].draw(_window);
 	}
 }

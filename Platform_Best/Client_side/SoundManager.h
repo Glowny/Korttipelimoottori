@@ -39,6 +39,21 @@ public:
 		sFail.setVolume(50);
 		sFail.play();
 	}
+	void playCardAir()
+	{
+		
+		cAir.setVolume(10);
+		if(cAir.getStatus() != sf::Sound::Status::Playing)
+		{
+			cAir.play();
+		}
+		
+	}
+	void stopCardAir()
+	{
+		cAir.setVolume(0);
+	}
+
 	void playMusic();
 
 	void toggleMuteSounds();
@@ -59,7 +74,8 @@ private:
 	sf::Sound sNotice;
 	sf::SoundBuffer failSound;
 	sf::Sound sFail;
-
+	sf::SoundBuffer cardAir;
+	sf::Sound cAir;
 	sf::Music backGroundMusic;
 
 	bool muteSounds, muteMusic;

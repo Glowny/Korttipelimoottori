@@ -30,7 +30,14 @@ void CardObject::select()
 	}
 
 }
-
+void CardObject::select(bool b)
+{
+	_selected = b;
+	if (b == true)
+	_shape.setFillColor(sf::Color::Green);
+	else
+	_shape.setFillColor(sf::Color::White);
+}
 void CardObject::setSize(sf::Vector2f size)
 {
 
@@ -45,10 +52,11 @@ void CardObject::setSize(sf::Vector2f size)
 void CardObject::setPosition(sf::Vector2f position)
 {
 	_shape.setPosition(position);
-	_suitSprite.setPosition(position);
-
+	_suitSprite.setPosition(_shape.getPosition()-_shape.getOrigin());
+	
+	sf::Vector2f tempPosition = _shape.getPosition()-_shape.getOrigin();
 	if(_text->getRotation() == 0)
-	_text->setPosition(position.x,position.y + _suitSprite.getGlobalBounds().height);
+	_text->setPosition(tempPosition.x,tempPosition.y+_suitSprite.getGlobalBounds().height);
 
 	else if(_text->getRotation() == 90)
 		_text->setPosition(position.x-_suitSprite.getGlobalBounds().height,position.y);
@@ -58,6 +66,13 @@ void CardObject::setPosition(sf::Vector2f position)
 
 	else if(_text->getRotation() == 270)
 		_text->setPosition(position.x + _suitSprite.getGlobalBounds().height,position.y);
+}
+void CardObject::setOrigin(sf::Vector2f origin)
+{
+	_shape.setOrigin(origin);
+	_suitSprite.setPosition(_shape.getPosition()-_shape.getOrigin());
+	sf::Vector2f(position) =_shape.getPosition()-_shape.getOrigin();
+	_text->setPosition(position.x,position.y+_suitSprite.getGlobalBounds().height);
 }
 
 void CardObject::setRotation(float angle)

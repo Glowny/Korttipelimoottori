@@ -13,6 +13,17 @@ TableArea::TableArea(sf::FloatRect area,LINEUP_STYLE lineup)
 	_cardFont->loadFromFile("comic.ttf");
 }
 
+Hand TableArea::getLastPlayed()
+{
+	Hand temp;
+	
+	for(int i = 0; i < _latestCards.size();i++)
+	{
+		temp.push_back(Card(_latestCards[i].value,_latestCards[i].suit));
+	}
+	return temp;
+}
+
 void TableArea::lineUp()
 { 
 	if(_style == POTATO)

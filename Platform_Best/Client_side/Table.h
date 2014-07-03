@@ -21,6 +21,7 @@ public:
 	std::vector<TableArea> getTableAreas(){return _tableAreas;}
 	void createAreas(int areaCount);
 	void setCardAmounts(std::vector<int> cardAmounts);
+	Hand getLastPlayed(int index);
 
 private:
 	int _ownIndex;

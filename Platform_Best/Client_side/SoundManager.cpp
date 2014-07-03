@@ -27,6 +27,9 @@ void SoundManager::InitialiseSound()
 
 	failSound.loadFromFile("FailSound.wav");
 	sFail.setBuffer(failSound);
+
+	cardAir.loadFromFile("cardAir.wav");
+	cAir.setBuffer(cardAir);
 }
 
 void SoundManager::playMusic()

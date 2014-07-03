@@ -7,10 +7,13 @@
 #include "SoundManager.h"
 #include <SFML\Graphics.hpp>
 #include "DropDown.h"
+#include "Rulebook.h"
+#include "MouseExplosion.h"
+#include <fstream>
 
 enum SELECTION_AREA
 {
-	NOTHING = -1,
+	NO_AREA = -1,
 	TABLE_CENTER,
 	SECONDARY_CARDS,
 };
@@ -21,6 +24,7 @@ public:
 	UserInterface(sf::RenderWindow &window, Table &table);
 	~UserInterface(void);
 
+	void writeRulebook(std::string rulesData);
 	void draw();
 	void addCards(Hand cards);
 	void removeCards(Hand cards);
@@ -39,11 +43,15 @@ public:
 	void checkButtons(sf::Vector2i mousepos);
 	void turnOn(){_ownTurn = true;}
 	void gameStart(){_gameOn = true;}
+	void readRulebook();
 private:
 	bool _endTurn, _ownTurn, _gameOn;
 	int _selectedArea;
+	int _selectedCard;
+	bool _selection;
 	void lineUpCards();
 	void lineUpButtons();
+	sf::Clock _timer;
 	sf::Font *_cardFont;
 	sf::RectangleShape _button;
 	sf::RenderWindow &_window;
@@ -56,4 +64,7 @@ private:
 	std::vector<PopUp> _popUps;
 	Table &_table;
 	SoundManager* _soundManager;
+	Rulebook _ruleBook;
+	Rulebook _writeBook;
+	std::vector<MouseExplosion>_explosions;
 };

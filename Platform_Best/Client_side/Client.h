@@ -17,6 +17,7 @@ enum PACKET_ID
 	SET_CARDS,
 	MESSAGE,
 	TURN,
+	RULES,
 };
 
 class Client
@@ -32,7 +33,6 @@ private:
 	void initialize();
 	void receiver();
 	int _port;
-	//sf::Font *_font;
 	sf::IpAddress _ip;
 	std::string _id;
 	sf::Packet _packet;
@@ -50,4 +50,5 @@ private:
 	int _currentPlayerIndex;
 	sf::Uint16 _ownIndex;
 	std::vector<std::string> _playerIDs;
+	std::string _rulesData;
 };
