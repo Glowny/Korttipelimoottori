@@ -5,7 +5,10 @@
 
 class DropDown
 {
+	
 public:
+
+	//DropDown operator=(DropDown &d1){return d1;}
 	DropDown(sf::RenderWindow &window, std::string name,sf::Font &font, sf::Vector2f size, sf::Vector2f position);
 	~DropDown(void);
 	void pushOption(std::string name);
@@ -18,12 +21,16 @@ public:
 	int size(){return _shapes.size();}
 	void makeSelection(int index);
 	void makeBlue(int index,bool hover);
-private:
-	bool _active;
 	void arrange(sf::Text &text,sf::RectangleShape &shape);
+	void setPosition(sf::Vector2f pos);
+private:
+
+	bool _active;
 	std::vector<sf::RectangleShape>_shapes;
 	std::vector<std::string> _names;
 	std::vector<sf::Text>_texts;
-	sf::Font &_font;
-	sf::RenderWindow &_window;
+	sf::Font *_font;
+	sf::RenderWindow *_window;
+
 };
+
