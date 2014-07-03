@@ -16,6 +16,7 @@ public:
 	void drawTable();
 	void removeFromTable(int index,Hand h);
 	void removeFromHand(int playerIndex, int cards);
+	void addToHand(int playerIndex, int cards);
 	void setOwnIndex(int i){_ownIndex = i;}
 	std::vector<sf::FloatRect> getAreas();
 	std::vector<TableArea> getTableAreas(){return _tableAreas;}

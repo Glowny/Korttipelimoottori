@@ -19,7 +19,7 @@ public:
 	CardPacket processTurn();
 	void createArea();
 	void loadRulebook();
-	void playCards(int i, Hand h);
+	void addAreaCards(int i, Hand h);
 	Hand getAreaCards(int i);
 	void removeAreaCards(int i, Hand h);
 	Hand drawCards(int i);

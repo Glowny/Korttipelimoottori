@@ -15,7 +15,7 @@ Dealer::~Dealer(void)
 
 void Dealer::initialize()
 {
-	deck.hand.clear();
+	deck.clear();
 
 	for(int i = 1; i <= 13; i++)
 	{
@@ -24,10 +24,10 @@ void Dealer::initialize()
 		Card c(i, Clubs);
 		Card s(i, Spades);
 
-		deck.hand.push_back(h);
-		deck.hand.push_back(d);
-		deck.hand.push_back(c);
-		deck.hand.push_back(s);
+		deck.push_back(h);
+		deck.push_back(d);
+		deck.push_back(c);
+		deck.push_back(s);
 	}
 }
 
@@ -43,8 +43,13 @@ Hand Dealer::deal(int i)
 	{
 		for(int j = 0; j < i; j++)
 		{
-			temp.hand.push_back(deck.hand[0]);
-			deck.hand.erase(deck.hand.begin());
+			if(deck.hand.size() > 0)
+			{
+				temp.push_back(deck.hand[0]);
+				deck.hand.erase(deck.hand.begin());
+			}
+			else
+				std::cout<<"Deck is empty"<<std::endl;
 		}
 	}
 	else

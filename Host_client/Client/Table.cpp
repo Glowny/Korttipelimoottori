@@ -78,6 +78,14 @@ void Table::removeFromHand(int playerIndex, int cards)
 	_handAreas[index].removeCards(cards);
 }
 
+void Table::addToHand(int playerIndex, int cards)
+{
+	int index = playerIndex;
+	if(index > _ownIndex)
+		index--;
+	_handAreas[index].addCards(cards, _window);
+}
+
 std::vector<sf::FloatRect> Table::getAreas()
 {
 	std::vector<sf::FloatRect>temp_vect;

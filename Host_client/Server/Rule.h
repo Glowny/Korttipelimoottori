@@ -2,6 +2,7 @@
 #include "Hand.h"
 
 enum COMPARISON_TYPE{
+	ANY,
 	SMALLER,
 	BIGGER,
 	SAME,
@@ -22,7 +23,15 @@ enum EXCEPTION_TYPE{
 enum EXCEPTION_OUTCOME{
 	NOTHING,
 	CLEAR_TABLE,
-	PASKAA,
+	DRAW_TABLE,
+};
+
+enum BASICRULE_TYPE{
+	DRAW_TO_5,
+};
+
+enum BASICRULE_TRIGGER{
+	EACH_TURN,
 };
 
 

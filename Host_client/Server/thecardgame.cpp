@@ -21,32 +21,32 @@ int main()
 				server.send(platform.getPlayer(lastPlayerIndex).getID() +" voitti");
 				win = true;
 			}
-		server.send(receivedCards);
-		if(receivedCards._cards.hand.size() == 0)
-		{
-			cardCounter++;
-			if (players != 1)
-			{
-				if (cardCounter == players)
-				{
-					Hand tempH;
-					server.sendReplacement(CardPacket(players,tempH));
-					cardCounter = 1;
+		//server.send(receivedCards);
+		//if(receivedCards._cards.hand.size() == 0)
+		//{
+		//	cardCounter++;
+		//	if (players != 1)
+		//	{
+		//		if (cardCounter == players)
+		//		{
+		//			Hand tempH;
+		//			server.sendReplacement(CardPacket(players,tempH));
+		//			cardCounter = 1;
 
-					// tai käske clienttiä tyhjentämään pöytä
-				}
-			}
-			else
-			{
-				Hand tempH;
-				server.sendReplacement(CardPacket(players,tempH));
-				cardCounter = 1;
-				// tai käske clienttiä tyhjentämään pöytä
-			}
-				
-		}
-		else
-			cardCounter = 1;
+		//			// tai käske clienttiä tyhjentämään pöytä
+		//		}
+		//	}
+		//	else
+		//	{
+		//		Hand tempH;
+		//		server.sendReplacement(CardPacket(players,tempH));
+		//		cardCounter = 1;
+		//		// tai käske clienttiä tyhjentämään pöytä
+		//	}
+		//		
+		//}
+		//else
+		//	cardCounter = 1;
 
 		if(!server.checkConnection())
 		{

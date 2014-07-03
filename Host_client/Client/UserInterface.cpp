@@ -15,7 +15,7 @@ UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(win
 	_cardFont->loadFromFile("comic.ttf");
 	_cardArea = (sf::FloatRect(0,height*0.75f,
 		width*0.75f,height*0.25f));
-	_selectedArea = NOTHING;
+	_selectedArea = NO_AREA;
 
 	_buttonArea = (sf::FloatRect(width*0.75f,height*0.75f,
 		width*0.25f,height*0.25f));
@@ -83,7 +83,7 @@ void UserInterface::checkButtons(sf::Vector2i mousepos)
 
 	if(_buttons[0].getArea().contains(sf::Vector2f(mousepos)))
 		{
-			if(_selectedArea == NOTHING)
+			if(_selectedArea == NO_AREA)
 				popUp("Select area!", 1);
 			else if(!_ruleBook.checkRules(getSelected(),_table.getLastPlayed(_table.getAreas().size()-1)))
 				popUp("Too few cards, man!", 1);

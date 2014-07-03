@@ -32,6 +32,16 @@ bool Rulebook::checkRules(Hand selectedCards, Hand targetCards)
 
 }
 
+EXCEPTION_OUTCOME Rulebook::checkExceptionRules(Hand playedCards)
+{
+	for(int i = 0;  i < _exceptionRules.size(); i++)
+	{
+		if(_exceptionRules[i].check(playedCards) != NOTHING)
+			return _exceptionRules[i].check(playedCards);
+	}
+	return NOTHING;
+}
+
 void Rulebook::writeToFile(std::string name)
 {
 
@@ -52,14 +62,9 @@ void Rulebook::writeToFile(std::string name)
 	{
 		outputFile.write((char*)&_amountRules[i],sizeof(AmountComparison));
 	}
-	outputFile.write((char*)&_startingRule,sizeof(StartingRule));
 
 	outputFile.close();
 	}
-	_valueRules.clear();
-	_amountRules.clear();
-	_startingRule = StartingRule();
-
 }
 
 void Rulebook::readFromFile(std::string name)
@@ -91,18 +96,6 @@ void Rulebook::readFromFile(std::string name)
 		inputFile.read((char*)&ac,sizeof(AmountComparison));
 		_amountRules.push_back(ac);
 	}
-
-	int exceptionalSize;
-	inputFile.read((char*)&exceptionalSize,sizeof(int));
-
-	for(int i = 0; i < exceptionalSize;i++)
-	{
-		ExceptionalRule er;
-		inputFile.read((char*)&er,sizeof(ExceptionalRule));
-		_exceptionRules.push_back(er);
-	}
-
-	inputFile.read((char*)&_startingRule,sizeof(StartingRule));
 
 	inputFile.close();
 	}

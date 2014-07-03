@@ -14,6 +14,7 @@ enum PACKET_ID
 	WAIT,
 	START,
 	ADD_CARDS,
+	REMOVE_CARDS,
 	SET_CARDS,
 	MESSAGE,
 	TURN,
@@ -47,7 +48,7 @@ private:
 	UserInterface _UI;
 	Editor _editor;
 	std::vector<int> _cardAmounts;
-	int _currentPlayerIndex;
+	sf::Uint16 _currentPlayerIndex;
 	sf::Uint16 _ownIndex;
 	std::vector<std::string> _playerIDs;
 	std::string _rulesData;

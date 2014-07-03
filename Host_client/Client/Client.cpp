@@ -95,8 +95,6 @@ void Client::receiver()
 		//Otetaan vastaan alkukäsi ja muut pelaajat.
 	case START:
 
-		_currentPlayerIndex = 0;
-
 		_tempHand.hand.clear();
 
 		sf::Uint16 areasAmount;
@@ -125,6 +123,11 @@ void Client::receiver()
 
 		_packet>>_ownIndex;
 
+		_packet>>_currentPlayerIndex;
+
+		std::cout<<"Your index number: "<<_ownIndex<<std::endl;
+		std::cout<<"Starting player's index number: "<<_currentPlayerIndex<<std::endl;
+
 		_table.setOwnIndex(_ownIndex);
 
 		_table.setCardAmounts(_cardAmounts);
@@ -142,7 +145,7 @@ void Client::receiver()
 			std::cout<<_tempHand.hand[i].suit<<" "<<_tempHand.hand[i].value<<std::endl;
 		}
 
-		std::cout<<"Tota cards: "<<_tempHand.hand.size()<<std::endl;
+		std::cout<<"Total cards: "<<_tempHand.hand.size()<<std::endl;
 
 		_UI.gameStart();
 
@@ -183,22 +186,52 @@ void Client::receiver()
 
 		_tempCardPacket._cards.clear();
 
+		_packet>>_currentPlayerIndex;
+
 		_packet>>_tempCardPacket;
 
-		if(_tempCardPacket._cards.size()>0)
+		if(_tempCardPacket._area >= 0 && _tempCardPacket._area < _table.getTableAreas().size())
 		{
-			std::cout<<_playerIDs[_currentPlayerIndex]<<" plays"<<std::endl;
-			_table.addToTable(_tempCardPacket._area,_tempCardPacket._cards);
+			if(_tempCardPacket._cards.size()>0)
+			{
+				std::cout<<_currentPlayerIndex<<". "<<_playerIDs[_currentPlayerIndex]<<" plays"<<std::endl;
+				_table.addToTable(_tempCardPacket._area,_tempCardPacket._cards);
+
+				if(_currentPlayerIndex != _ownIndex)
+				{
+					std::cout<<"Removed "<<_tempCardPacket._cards.size()<<" cards from "<<_currentPlayerIndex<<". "<<_playerIDs[_currentPlayerIndex]<<" hand"<<std::endl;
+					_table.removeFromHand(_currentPlayerIndex, _tempCardPacket._cards.size());
+				}
+			}
 		}
-
-		if(_currentPlayerIndex != _ownIndex)
-			_table.removeFromHand(_currentPlayerIndex, _tempCardPacket._cards.size());
-
-		_currentPlayerIndex++;
-			if(_currentPlayerIndex == _playerCount)
-				_currentPlayerIndex = 0;
+		else
+		{
+			if(_tempCardPacket._cards.size()>0)
+			{
+				if(_currentPlayerIndex != _ownIndex)
+				{
+					std::cout<<"Added "<<_tempCardPacket._cards.size()<<" cards to "<<_currentPlayerIndex<<". "<<_playerIDs[_currentPlayerIndex]<<" hand"<<std::endl;
+					_table.addToHand(_currentPlayerIndex, _tempCardPacket._cards.size());
+				}
+				else
+					_UI.addCards(_tempCardPacket._cards);
+			}
+		}
 		break;
 
+	case REMOVE_CARDS:
+
+		sf::Uint16 playedCardsAmount;
+
+		_packet>>_currentPlayerIndex>>playedCardsAmount;
+
+		if(_currentPlayerIndex != _ownIndex)
+		{
+			std::cout<<"Removed "<<playedCardsAmount<<" cards from "<<_currentPlayerIndex<<". "<<_playerIDs[_currentPlayerIndex]<<" hand"<<std::endl;
+			_table.removeFromHand(_currentPlayerIndex, playedCardsAmount);
+		}
+
+		break;
 		//Korvataan pelialueen kortit saaduilla
 	case SET_CARDS:
 

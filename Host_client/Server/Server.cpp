@@ -51,25 +51,34 @@ void Server::reset()
 	_selector.add(_listener);
 }
 
-void Server::send(int i, CardPacket cp)
+void Server::send(int currentPlayerIndex, CardPacket cp)
 {
 	_packet.clear();
 	_packetID = ADD_CARDS;
-	_packet<<_packetID<<cp;
-	_clients[i]->send(_packet);
-}
 
-void Server::send(CardPacket cp)
-{
-	_packet.clear();
-	_packetID = ADD_CARDS;
-	_packet<<_packetID<<cp;
+	sf::Uint16 cPI = currentPlayerIndex;
+	_packet<<_packetID<<cPI<<cp;
 
 	for(int i = 0; i < _clients.size(); i++)
 	{
 	_clients[i]->send(_packet);
 	}
 }
+
+void Server::send(int currentPlayerIndex, int playedCardsAmount)
+{
+	_packet.clear();
+	_packetID = REMOVE_CARDS;
+
+	sf::Uint16 cPI = currentPlayerIndex, pCA = playedCardsAmount;
+	_packet<<_packetID<<cPI<<pCA;
+
+	for(int i = 0; i < _clients.size(); i++)
+	{
+	_clients[i]->send(_packet);
+	}
+}
+
 void Server::send(std::string message)
 {
 	_packet.clear();
@@ -82,7 +91,7 @@ void Server::send(std::string message)
 	}
 }
 
-void Server::send(int i, int areas, Hand cards, std::vector<std::string> playerIDs, std::vector<sf::Uint16> cardAmounts)
+void Server::send(int i, int areas, Hand cards, std::vector<std::string> playerIDs, std::vector<sf::Uint16> cardAmounts, int startingPlayerIndex)
 {
 	_packet.clear();
 	_packetID = START;
@@ -105,9 +114,10 @@ void Server::send(int i, int areas, Hand cards, std::vector<std::string> playerI
 		_packet<<cardAmounts[j];
 	}
 
-	sf::Uint16 playerIndex;
+	sf::Uint16 playerIndex, starterIndex;
 	playerIndex = i;
-	_packet<<playerIndex;
+	starterIndex = startingPlayerIndex;
+	_packet<<playerIndex<<starterIndex;
 
 	_clients[i]->send(_packet);
 }

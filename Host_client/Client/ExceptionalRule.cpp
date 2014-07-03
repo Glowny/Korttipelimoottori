@@ -6,23 +6,21 @@ ExceptionalRule::~ExceptionalRule(void)
 {
 }
 
-EXCEPTION_OUTCOME ExceptionalRule::check(Hand selectedCards)
+EXCEPTION_OUTCOME ExceptionalRule::check(Hand playedCards)
 {
 	switch(_type)
 	{
 	case EMPTY_PLAY:
-		if(selectedCards.size() == 0)
+		if(playedCards.size() == 0)
 			return _outcome;
 		break;
 	case SPECIFIED_CARD:
-		for(int i = 0; i < selectedCards.size(); i++)
+		for(int i = 0; i < playedCards.size(); i++)
 		{
-			if(_specifiedCard == selectedCards.hand[i])
+			if(_specifiedCard == playedCards.hand[i])
 				return _outcome;
 		}
 		break;
-	default:
-		return NOTHING;
-		break;
 	}
+	return NOTHING;
 }
