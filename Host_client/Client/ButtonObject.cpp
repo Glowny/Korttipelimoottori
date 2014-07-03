@@ -24,37 +24,27 @@ ButtonObject::~ButtonObject(void)
 {
 }
 
-void ButtonObject::splode()
+void ButtonObject::arrange()
 {
-	_splosions.push_back(Explosion(sf::Vector2f(_shape.getPosition().x+_shape.getSize().x*0.5f,_shape.getPosition().y+_shape.getSize().y*0.5f)));
+	float ratiox = _shape.getGlobalBounds().width/_text.getGlobalBounds().width;
+	float ratioy = (_shape.getGlobalBounds().height/_text.getGlobalBounds().height);
+	ratioy*=0.5f;
+	_text.scale(ratiox,ratioy);
 }
 
 void ButtonObject::draw(sf::RenderWindow &window)
 {
-
 	if(_sprite.getTexture() != NULL)
 		window.draw(_sprite);
 	else
 		window.draw(_shape);
-
-	for(int i = 0; i < _splosions.size();)
-	{
-
-	if(_splosions[i].update())
-	{
-		_splosions[i].draw(window);
-		i++;
-	}
-	else
-	_splosions.erase(_splosions.begin()+i);
-	}
 
 	window.draw(_text);
 }
 
 void ButtonObject::setPosition(sf::Vector2f position)
 {
-	_text.setOrigin(_text.getGlobalBounds().width*0.5f, _text.getGlobalBounds().height*0.5f);
+	//_text.setOrigin(_text.getGlobalBounds().width*0.5f, _text.getGlobalBounds().height*0.5f);
 
 	if(_sprite.getTexture() != NULL)
 	{
@@ -64,8 +54,9 @@ void ButtonObject::setPosition(sf::Vector2f position)
 	else
 	{
 	_shape.setPosition(position);
-	_text.setPosition(position.x + _shape.getSize().x*0.5f, position.y + _shape.getSize().y*0.5f);
+	_text.setPosition(position);
 	}
+	arrange();
 }
 
 void ButtonObject::setSize(sf::Vector2f size)
@@ -77,10 +68,12 @@ void ButtonObject::setSize(sf::Vector2f size)
 		_sprite.setScale(scaleX,scaleY);
 	}
 	else
-		_shape = sf::RectangleShape(size);
-	_text.setCharacterSize(0.5f*size.y);
+	_shape = sf::RectangleShape(size);
+	_text.setCharacterSize(32);
 	_shape.setOutlineThickness(1.0f);
 	_shape.setOutlineColor(sf::Color::Black);
+	_shape.setFillColor(sf::Color(255,255,255,50));
+	arrange();
 }
 
 sf::FloatRect ButtonObject::getArea()
