@@ -27,6 +27,8 @@ public:
 	Client(sf::RenderWindow &window);
 	~Client(void);
 	void run();
+	void runServer();
+
 
 private:
 	void draw();
