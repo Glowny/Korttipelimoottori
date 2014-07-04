@@ -17,6 +17,6 @@ private:
 	bool same(Hand selectedCards,Hand targetCards);
 	bool smallerOrSame(Hand selectedCards,Hand targetCards);
 	bool biggerOrSame(Hand selectedCards,Hand targetCards);
-	bool checkFromRange(Hand selectedCards, Hand targetCards);
-	bool checkToRange(Hand selectedCards, Hand targetCards);
+	bool checkFromRange(Hand selectedCards);
+	bool checkToRange(Hand targetCards);
 };	

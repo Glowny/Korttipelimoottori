@@ -92,8 +92,6 @@ bool ValueComparison::smallerOrSame(Hand selectedCards,Hand targetCards)
 
 bool ValueComparison::biggerOrSame(Hand selectedCards,Hand targetCards)
 {
-	
-
 	for(int i = 0; i < selectedCards.size(); i++)
 	{
 		if(targetCards.size()!=0) //Täytyy ehkä tehdä sääntö liittyen tyhjään pöytään/alottavaan pelaajaan
@@ -101,14 +99,14 @@ bool ValueComparison::biggerOrSame(Hand selectedCards,Hand targetCards)
 			for(int j = 0;j < targetCards.size();j++)
 			{
 				if(selectedCards.hand[i].value < targetCards.hand[j].value)
-				return false;
+					return false;
 			}
 		}
 	}
 	return true;
 }
 
-bool ValueComparison::checkFromRange(Hand selectedCards, Hand targetCards)
+bool ValueComparison::checkFromRange(Hand selectedCards)
 {	
 	bool onRange = true;
 	
@@ -121,7 +119,7 @@ bool ValueComparison::checkFromRange(Hand selectedCards, Hand targetCards)
 	return onRange;
 }
 
-bool ValueComparison::checkToRange(Hand selectedCards, Hand targetCards)
+bool ValueComparison::checkToRange(Hand targetCards)
 {
 	bool onRange = true;
 
@@ -139,12 +137,12 @@ bool ValueComparison::check(Hand selectedCards,Hand targetCards)
 	bool passed = false, onFromRange = true, onToRange = true;
 
 	if(_minFrom != 0)
-		onFromRange = checkFromRange(selectedCards, targetCards);
+		onFromRange = checkFromRange(selectedCards);
 
 	if(onFromRange)
 	{
 		if(_minTo != 0)
-			onToRange = checkToRange(selectedCards, targetCards);
+			onToRange = checkToRange(targetCards);
 
 		if(onToRange)
 		{

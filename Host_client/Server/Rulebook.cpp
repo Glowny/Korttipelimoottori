@@ -40,12 +40,12 @@ bool Rulebook::checkRules(Hand selectedCards, Hand targetCards)
 
 }
 
-EXCEPTION_OUTCOME Rulebook::checkExceptionRules(Hand playedCards)
+EXCEPTION_OUTCOME Rulebook::checkExceptionRules(Hand playedCards, Hand targetCards)
 {
 	for(int i = 0;  i < _exceptionRules.size(); i++)
 	{
-		if(_exceptionRules[i].check(playedCards) != NOTHING)
-			return _exceptionRules[i].check(playedCards);
+		if(_exceptionRules[i].check(playedCards, targetCards) != NOTHING)
+			return _exceptionRules[i].check(playedCards, targetCards);
 	}
 	return NOTHING;
 }

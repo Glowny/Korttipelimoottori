@@ -14,7 +14,7 @@ public:
 	Rulebook(void);
 	~Rulebook(void);
 	bool checkRules(Hand selectedCards, Hand targetCards);
-	EXCEPTION_OUTCOME checkExceptionRules(Hand playedCards);
+	EXCEPTION_OUTCOME checkExceptionRules(Hand playedCards, Hand targetCards);
 	int init(std::vector<Player> players);
 	void push_back(AmountComparison rule);
 	void push_back(ValueComparison rule);

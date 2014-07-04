@@ -51,13 +51,13 @@ void Server::reset()
 	_selector.add(_listener);
 }
 
-void Server::send(int currentPlayerIndex, CardPacket cp)
+void Server::send(int currentPlayerIndex, CardPacket cp, int playedCardsAmount)
 {
 	_packet.clear();
 	_packetID = ADD_CARDS;
 
-	sf::Uint16 cPI = currentPlayerIndex;
-	_packet<<_packetID<<cPI<<cp;
+	sf::Uint16 cPI = currentPlayerIndex, pCA = playedCardsAmount;
+	_packet<<_packetID<<cPI<<cp<<pCA;
 
 	for(int i = 0; i < _clients.size(); i++)
 	{

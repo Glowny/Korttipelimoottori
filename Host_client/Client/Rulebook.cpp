@@ -5,12 +5,6 @@ Rulebook::Rulebook(void)
 {
 }
 
-int Rulebook::init(std::vector<Player> players)
-{
-	int index = _startingRule.choosePlayer(players);
-	return index;
-}
-
 bool Rulebook::checkRules(Hand selectedCards, Hand targetCards)
 {
 	if(selectedCards.size() != 0)
@@ -30,16 +24,6 @@ bool Rulebook::checkRules(Hand selectedCards, Hand targetCards)
 
 	return true;
 
-}
-
-EXCEPTION_OUTCOME Rulebook::checkExceptionRules(Hand playedCards)
-{
-	for(int i = 0;  i < _exceptionRules.size(); i++)
-	{
-		if(_exceptionRules[i].check(playedCards) != NOTHING)
-			return _exceptionRules[i].check(playedCards);
-	}
-	return NOTHING;
 }
 
 void Rulebook::writeToFile(std::string name)
@@ -111,16 +95,6 @@ void Rulebook::push_back(AmountComparison rule)
 void Rulebook::push_back(ValueComparison rule)
 {
 	_valueRules.push_back(rule);
-}
-
-void Rulebook::push_back(ExceptionalRule rule)
-{
-	_exceptionRules.push_back(rule);
-}
-
-void Rulebook::push_back(StartingRule rule)
-{
-	_startingRule = rule;
 }
 
 Rulebook::~Rulebook(void)

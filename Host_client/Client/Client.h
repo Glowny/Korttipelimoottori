@@ -37,7 +37,7 @@ private:
 	sf::IpAddress _ip;
 	std::string _id;
 	sf::Packet _packet;
-	sf::Uint16 _packetID, _currentArea;
+	sf::Uint16 _packetID, _currentArea, _playedCardsAmount;
 	sf::TcpSocket _socket;
 	sf::RenderWindow &_window;
 	StartScreen _startScreen;

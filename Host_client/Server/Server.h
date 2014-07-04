@@ -22,7 +22,7 @@ public:
 	std::vector<std::string> initialize(int playercount);
 	void reset();
 	void send(std::string message);
-	void send(int currentPlayerIndex, CardPacket cards);
+	void send(int currentPlayerIndex, CardPacket cards, int playedCardsAmount);
 	void send(int currentPlayerIndex, int playedCardsAmount);
 	void send(int i, std::string message);
 	void send(int i, int areas, Hand cards, std::vector<std::string> playerIDs, std::vector<sf::Uint16> cardAmounts, int startingPlayerIndex);

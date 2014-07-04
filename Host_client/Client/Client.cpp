@@ -190,6 +190,8 @@ void Client::receiver()
 
 		_packet>>_tempCardPacket;
 
+		_packet>>_playedCardsAmount;
+
 		if(_tempCardPacket._area >= 0 && _tempCardPacket._area < _table.getTableAreas().size())
 		{
 			if(_tempCardPacket._cards.size()>0)
@@ -200,7 +202,7 @@ void Client::receiver()
 				if(_currentPlayerIndex != _ownIndex)
 				{
 					std::cout<<"Removed "<<_tempCardPacket._cards.size()<<" cards from "<<_currentPlayerIndex<<". "<<_playerIDs[_currentPlayerIndex]<<" hand"<<std::endl;
-					_table.removeFromHand(_currentPlayerIndex, _tempCardPacket._cards.size());
+					_table.removeFromHand(_currentPlayerIndex, _playedCardsAmount);
 				}
 			}
 		}
@@ -221,14 +223,12 @@ void Client::receiver()
 
 	case REMOVE_CARDS:
 
-		sf::Uint16 playedCardsAmount;
-
-		_packet>>_currentPlayerIndex>>playedCardsAmount;
+		_packet>>_currentPlayerIndex>>_playedCardsAmount;
 
 		if(_currentPlayerIndex != _ownIndex)
 		{
-			std::cout<<"Removed "<<playedCardsAmount<<" cards from "<<_currentPlayerIndex<<". "<<_playerIDs[_currentPlayerIndex]<<" hand"<<std::endl;
-			_table.removeFromHand(_currentPlayerIndex, playedCardsAmount);
+			std::cout<<"Removed "<<_playedCardsAmount<<" cards from "<<_currentPlayerIndex<<". "<<_playerIDs[_currentPlayerIndex]<<" hand"<<std::endl;
+			_table.removeFromHand(_currentPlayerIndex, _playedCardsAmount);
 		}
 
 		break;

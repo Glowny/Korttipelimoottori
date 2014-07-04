@@ -6,7 +6,7 @@ ExceptionalRule::~ExceptionalRule(void)
 {
 }
 
-EXCEPTION_OUTCOME ExceptionalRule::check(Hand playedCards)
+EXCEPTION_OUTCOME ExceptionalRule::check(Hand playedCards, Hand targetCards)
 {
 	switch(_type)
 	{
@@ -20,6 +20,14 @@ EXCEPTION_OUTCOME ExceptionalRule::check(Hand playedCards)
 			if(_specifiedCard == playedCards.hand[i])
 				return _outcome;
 		}
+		break;
+	case TABLE_VALUE:
+		if(targetCards.size()>0)
+		{
+		if(playedCards.hand[0].value == targetCards.hand[0].value)
+			return _outcome;
+		}
+		return NOTHING;
 		break;
 	}
 	return NOTHING;

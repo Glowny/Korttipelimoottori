@@ -2,6 +2,7 @@
 #include "Hand.h"
 
 enum COMPARISON_TYPE{
+	EMPTY = -1,
 	ANY,
 	SMALLER,
 	BIGGER,
@@ -30,8 +31,6 @@ enum EXCEPTION_OUTCOME{
 
 class Rule
 {
-
-
 public:
 	Rule(void);
 	virtual ~Rule(void);

@@ -25,9 +25,9 @@ UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(win
 	_soundManager->playMusic();
 	_soundManager->InitialiseSound();
 
-	addButton("End Turn");
-	addButton("Mute Music");
-	addButton("Mute Sounds");
+	addButton("Fuck you");
+	addButton("Kill the band");
+	addButton("STFU");
 }
 
 
@@ -86,7 +86,7 @@ void UserInterface::checkButtons(sf::Vector2i mousepos)
 			if(_selectedArea == NO_AREA)
 				popUp("Select area!", 1);
 			else if(!_ruleBook.checkRules(getSelected(),_table.getLastPlayed(_table.getAreas().size()-1)))
-				popUp("Too few cards, man!", 1);
+				popUp("I have done a terrible mistake, master!", 1);
 			else
 			{
 				_soundManager->playClick();
@@ -111,13 +111,12 @@ void UserInterface::checkButtons(sf::Vector2i mousepos)
 
 void UserInterface::checkCardObjects(sf::Vector2i mousepos)
 {
-	for(int i = 0; i < _cardObjects.size();i++)
+	for(int i = _cardObjects.size()-1; i >= 0;i--)
 		{
 			if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
 			{
 					_cardObjects[i].select();
-					_soundManager->playClick();
-				
+					_soundManager->playClick();	
 			}
 		}
 }

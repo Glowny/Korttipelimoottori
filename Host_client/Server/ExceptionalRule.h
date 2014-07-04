@@ -10,7 +10,7 @@ public:
 
 	~ExceptionalRule(void);
 
-	EXCEPTION_OUTCOME check(Hand playedCards);
+	EXCEPTION_OUTCOME check(Hand playedCards, Hand targetCards);
 
 	EXCEPTION_TYPE _type;
 	EXCEPTION_OUTCOME _outcome;

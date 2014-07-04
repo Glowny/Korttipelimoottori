@@ -26,7 +26,6 @@ public:
 	Player getPlayer(int i);
 	int getCurrentPlayerIndex(){return _currentPlayerIndex;}
 	void DEBUG_writeFunction();
-	void DEBUG_readFunction();
 	
 private:
 	Server &_server;
@@ -34,7 +33,7 @@ private:
 	std::vector<Player> _players;
 	int _currentPlayerIndex;
 	std::vector<PlayArea> _areas;
-	Hand _discard;
+	Hand _discard, _onTable;
 	Rulebook _ruleBook;
 	std::string _ruleBookData;
 };

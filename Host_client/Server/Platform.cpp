@@ -19,9 +19,12 @@ void Platform::DEBUG_writeFunction()
 		_ruleBook.push_back(ValueComparison(1,1,11,13,ANY,OWN_TO_TABLE));
 		_ruleBook.push_back(ValueComparison(SAME, OWN));
 
-		_ruleBook.push_back(AmountComparison(BIGGER_SAME));
+		_ruleBook.push_back(AmountComparison(2,9,BIGGER_SAME, SAME, ANY));
+		_ruleBook.push_back(AmountComparison(11,13,BIGGER_SAME, SAME, ANY));
+		_ruleBook.push_back(AmountComparison(1,1,ANY));
+		_ruleBook.push_back(AmountComparison(10,10,ANY));
 
-		_ruleBook.push_back(BasicRule(DRAW_TO_5,EACH_TURN));
+		_ruleBook.push_back(BasicRule(DRAW_TO, 5, EACH_TURN));
 
 		_ruleBook.push_back(ExceptionalRule(EMPTY_PLAY, DRAW_TABLE));
 		_ruleBook.push_back(ExceptionalRule(SPECIFIED_CARD,Card(10,0) ,CLEAR_TABLE));
@@ -32,26 +35,11 @@ void Platform::DEBUG_writeFunction()
 		_ruleBook.push_back(ExceptionalRule(SPECIFIED_CARD,Card(1,1) ,CLEAR_TABLE));
 		_ruleBook.push_back(ExceptionalRule(SPECIFIED_CARD,Card(1,2) ,CLEAR_TABLE));
 		_ruleBook.push_back(ExceptionalRule(SPECIFIED_CARD,Card(1,3) ,CLEAR_TABLE));
+		_ruleBook.push_back(ExceptionalRule(TABLE_VALUE,ADD_TO_TABLE));
 
 		_ruleBook.writeToHostFile("vesa_host.dat");
 		_ruleBook.writeToClientFile("vesa_client.dat");
 		_ruleBook.clear();
-}
-
-void Platform::DEBUG_readFunction()
-{
-	std::ifstream inputFile("vesa.dat",std::ios::binary|std::ios::in);
-
-	if(inputFile)
-	{
-		while(inputFile.peek() != EOF)
-		{
-			inputFile.read((char*)&_ruleBook,sizeof(Rulebook));
-		}
-		
-		inputFile.close();
-	}
-
 }
 
 void Platform::reset()
@@ -257,21 +245,23 @@ CardPacket Platform::processTurn()
 
 	if(temp._area >= 0 && temp._area < _areas.size())
 	{
+		Hand lastAdded = _areas[temp._area].getLastAdded();
+
 		_areas[temp._area].addCards(temp._cards);
 
 		for(int i = 0; i < _ruleBook.getBasicRules().size(); i++)
 		{
-			if(_ruleBook.getBasicRules()[i]._type == DRAW_TO_5)
+			if(_ruleBook.getBasicRules()[i]._type == DRAW_TO)
 			{
 				if(_ruleBook.getBasicRules()[i]._trigger == EACH_TURN)
 				{
 					sf::Uint16 noArea = -1;
-					int drawAmount = 5 - _players[_currentPlayerIndex].getHand().size();
+					int drawAmount = _ruleBook.getBasicRules()[i]._drawToAmount - _players[_currentPlayerIndex].getHand().size();
 					if(drawAmount > 0)
 					{
 						Hand drawn = _dealer.deal(drawAmount);
 						_players[_currentPlayerIndex].addCards(drawn);
-						_server.send(_currentPlayerIndex, CardPacket(noArea, drawn));
+						_server.send(_currentPlayerIndex, CardPacket(noArea, drawn), NULL);
 
 						std::cout<<_players[_currentPlayerIndex].getID()<<" draws "<<drawn.size()<<" cards"<<std::endl;
 					}
@@ -279,15 +269,29 @@ CardPacket Platform::processTurn()
 			}
 		}
 
-		EXCEPTION_OUTCOME exception = _ruleBook.checkExceptionRules(temp._cards);
-
 		Hand emptyHand;
 		CardPacket temp2;
+
+		bool cardOnTable = false;
+		for(int i = 0; i < lastAdded.size(); i++)
+		{
+			for(int j = 0; j < _onTable.size(); j++)
+			{
+				if(lastAdded.hand[i] == _onTable.hand[j])
+					cardOnTable = true;
+			}
+			if(!cardOnTable)
+				_onTable.push_back(lastAdded.hand[i]);
+		}
+
+		EXCEPTION_OUTCOME exception = _ruleBook.checkExceptionRules(temp._cards, _onTable);
 
 		switch(exception)
 		{
 		case NOTHING:
-			_server.send(_currentPlayerIndex, temp);
+			_server.send(_currentPlayerIndex, temp, temp._cards.size());
+
+			_onTable.clear();
 
 			_currentPlayerIndex++;
 			if(_currentPlayerIndex == _players.size())
@@ -308,6 +312,8 @@ CardPacket Platform::processTurn()
 			_server.sendReplacement(temp2);
 			_server.send(_currentPlayerIndex, temp._cards.size());
 
+			_onTable.clear();
+
 			std::cout<<_players[_currentPlayerIndex].getID()<<" cleared table & played "<<temp._cards.size()<<std::endl;
 
 			return temp2;
@@ -318,9 +324,24 @@ CardPacket Platform::processTurn()
 			temp2 = CardPacket(noArea,_areas[temp._area].getHand());
 			_areas[temp._area].clear();
 			_server.sendReplacement(temp);
-			_server.send(_currentPlayerIndex,temp2);
+			_server.send(_currentPlayerIndex,temp2, NULL);
+
+			_onTable.clear();
 
 			std::cout<<_players[_currentPlayerIndex].getID()<<" draws table cards"<<std::endl;
+
+			_currentPlayerIndex++;
+			if(_currentPlayerIndex == _players.size())
+				_currentPlayerIndex = 0;
+			break;
+		case ADD_TO_TABLE:
+			for(int i = 0; i < temp._cards.size(); i++)
+			{
+				_onTable.push_back(temp._cards.hand[i]);
+			}
+			int playedCardsAmount = temp._cards.size();
+			temp._cards = _onTable;
+			_server.send(_currentPlayerIndex, temp, playedCardsAmount);
 
 			_currentPlayerIndex++;
 			if(_currentPlayerIndex == _players.size())

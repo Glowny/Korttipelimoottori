@@ -24,16 +24,25 @@ Hand PlayArea::getHand()
 	return hand;
 }
 
+Hand PlayArea::getLastAdded()
+{
+	return lastAdded;
+}
+
 void PlayArea::setHand(Hand h)
 {
 	hand = h;
+	lastAdded = h;
 }
 
 void PlayArea::addCards(Hand h)
 {
+	lastAdded.clear();
+
 	for(int i = 0; i < h.hand.size(); i++)
 	{
-		hand.hand.push_back(h.hand[i]);
+		hand.push_back(h.hand[i]);
+		lastAdded.push_back(h.hand[i]);
 	}
 }
 
@@ -54,11 +63,12 @@ void PlayArea::removeCards(Hand h)
 		}
 		if(!erased)
 			i++;
-		
 	}
+	lastAdded.clear();
 }
 
 void PlayArea::clear()
 {
 	hand.clear();
+	lastAdded.clear();
 }
