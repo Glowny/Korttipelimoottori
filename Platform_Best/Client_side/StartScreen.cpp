@@ -1,9 +1,8 @@
-#include "StartScreen.h"
-
+﻿#include "StartScreen.h"
+#include <iostream>
 
 StartScreen::StartScreen(void) : _window(sf::RenderWindow(sf::VideoMode(512,256,32),"NextCardGame"))
 {	
-	
 	sf::Vector2u size(_window.getSize());
 	_textInput.setPosition(size.x*0.5f,size.y*0.75f);
 	_screenText.setPosition(size.x*0.5f,size.y*0.25f);
@@ -82,7 +81,6 @@ void StartScreen::askID()
 void StartScreen::askIP()
 {
 	sf::Event Event;
-
 		_screenText.setString("Enter IP please: ");
 		_screenText.setOrigin(_screenText.getGlobalBounds().width*0.5f,_screenText.getGlobalBounds().height*0.5f);
 		bool done = false;
@@ -134,7 +132,7 @@ void StartScreen::askWhatYouWannaDo()
 {
 	sf::Event Event;
 
-		_screenText.setString("WhatYouWannaDo?");
+		_screenText.setString("Main menu ☺");
 		_screenText.setOrigin(_screenText.getGlobalBounds().width*0.5f,_screenText.getGlobalBounds().height*0.5f);
 		bool done = false;
 		while(!done)
@@ -186,10 +184,12 @@ void StartScreen::askWhatYouWannaDo()
 						break;
 
 					case HOST:
+						askID();
+						 _ipString = sf::IpAddress::getLocalAddress().toString();
 						done = true;
 						break;
-
 					}
+				
 				}
 
 		switch(_option)

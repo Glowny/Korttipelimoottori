@@ -5,7 +5,7 @@ Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(
 {	
 	_window.setActive(false);
 	_window.setVisible(false);
-
+	sf::Thread thread(&Client::runServer, this);
 	_port = 2000;
 	_startScreen.run();
 
@@ -19,6 +19,15 @@ Client::Client(sf::RenderWindow &window) : _window(window), _table(window), _UI(
 		initialize();
 		run();
 	case HOST:
+		/*sf::Thread thread(&Client::runServer, this);
+		thread.launch();
+		sf::Time t = sf::seconds(1);
+		sf::Clock clock;
+		while (clock.getElapsedTime() < t)
+		{
+		}
+		initialize();
+		run();*/
 		break;
 	}
 }
@@ -50,6 +59,11 @@ void Client::run()
 {
 	receiver();
 	draw();
+}
+
+void Client::runServer()
+{
+	system("Korttipelimoottori_Server.exe");
 }
 
 void Client::draw()

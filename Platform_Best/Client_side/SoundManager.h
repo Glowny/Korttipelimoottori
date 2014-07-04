@@ -13,45 +13,29 @@ public:
 
 	void playClick()
 	{
-		if(muteSounds)
-			sClick.setVolume(0);
-		else
-			sClick.setVolume(20);
 		sClick.play();
 	}
 
 	void playVictory()
 	{
-		sVictory.setVolume(50);
 		sVictory.play();
 	}
 	void playNotice()
 	{
-		if(muteSounds)
-			sNotice.setVolume(0);
-		else
-			sNotice.setVolume(20);
 		sNotice.play();
 	}
 
 	void playFail()
 	{
-		sFail.setVolume(50);
 		sFail.play();
 	}
-	void playCardAir()
+	void playCardPick()
 	{
-		
-		cAir.setVolume(10);
-		if(cAir.getStatus() != sf::Sound::Status::Playing)
-		{
-			cAir.play();
-		}
-		
+		cPick.play();	
 	}
-	void stopCardAir()
+	void playCardDrop()
 	{
-		cAir.setVolume(0);
+		cDrop.play();
 	}
 
 	void playMusic();
@@ -74,10 +58,13 @@ private:
 	sf::Sound sNotice;
 	sf::SoundBuffer failSound;
 	sf::Sound sFail;
-	sf::SoundBuffer cardAir;
-	sf::Sound cAir;
+	sf::SoundBuffer cardPick;
+	sf::Sound cPick;
+	sf::SoundBuffer cardDrop;
+	sf::Sound cDrop;
 	sf::Music backGroundMusic;
-
+	
+	
 	bool muteSounds, muteMusic;
 };
 

@@ -22,7 +22,6 @@ UserInterface::UserInterface(sf::RenderWindow &window, Table &table):_window(win
 		width*0.25f,height*0.25f));
 
 	_soundManager = new SoundManager;
-
 	_soundManager->playMusic();
 	_soundManager->InitialiseSound();
 
@@ -121,13 +120,14 @@ void UserInterface::checkCardObjects(sf::Vector2i mousepos)
 
 	if (_selection == false)
 	{
-	for(int i = 0; i < _cardObjects.size();i++)
+	for(int i = _cardObjects.size()-1; i >= 0;i--)
 		{
 			if(_cardObjects[i].getArea().contains(sf::Vector2f(mousepos)))
 			{
+				_soundManager->playCardPick();
 				_selectedCard = i;
 				_selection = true;
-				
+				_soundManager->playCardPick();
 				_cardObjects[i].setOrigin(sf::Vector2f(sf::Vector2f(mousepos).x-_cardObjects[i].getArea().left, sf::Vector2f(mousepos).y-_cardObjects[i].getArea().top));
 				_cardObjects[i].setPosition(sf::Vector2f(sf::Vector2f(mousepos).x,sf::Vector2f(mousepos).y));
 				
@@ -137,7 +137,6 @@ void UserInterface::checkCardObjects(sf::Vector2i mousepos)
 	}
 	else
 	{
-		_soundManager->playCardAir();
 		_cardObjects[_selectedCard].setPosition(sf::Vector2f(sf::Mouse::getPosition(_window).x,sf::Mouse::getPosition(_window).y));
 		if(_timer.getElapsedTime().asSeconds()>0.009)
   	{	
@@ -162,6 +161,7 @@ void UserInterface::checkTableAreas(sf::Vector2i mousepos)
 {
 	if (_cardObjects.size() != 0)
 	{
+		bool noCards = true;
 		for(int j = 0; j < _cardObjects.size(); j++)
 		{
 		
@@ -172,7 +172,7 @@ void UserInterface::checkTableAreas(sf::Vector2i mousepos)
 				_borders[_borders.size()-1].setFillColor(sf::Color(50,50,50,50));
 				_selectedArea = _borders.size()-1;
 				_cardObjects[j].select(true);
-
+				noCards = false;
 				if(_borders.size()>1)
 				{
 					for(int i = 0; i < _borders.size()-1; i++)
@@ -185,6 +185,11 @@ void UserInterface::checkTableAreas(sf::Vector2i mousepos)
 			{
 				_cardObjects[j].select(false);
 			}
+		}
+		if (noCards == true)
+		{
+			_selectedArea = NOTHING;
+			_borders[_borders.size()-1].setFillColor(sf::Color(0,0,0,0));
 		}
 	}
 	if(_borders.size()>1)
@@ -258,10 +263,10 @@ bool UserInterface::checkInput()
 			
 			else if(_selection == true)
 			{
-			_soundManager->stopCardAir();
 			_selection = false;
 			_cardObjects[_selectedCard].setPosition(sf::Vector2f(_cardObjects[_selectedCard].getArea().left, _cardObjects[_selectedCard].getArea().top));
 			_cardObjects[_selectedCard].setOrigin(sf::Vector2f(0,0));
+			_soundManager->playCardDrop();
 			
 			}
 			

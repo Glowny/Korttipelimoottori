@@ -2,7 +2,8 @@
 #include "SFML/Graphics.hpp"
 #include "SFML/Network.hpp"
 #include<string>
-
+#include <windows.h>
+#include <SFML\System.hpp>
 
 enum OPTION{
 	EDITOR,
@@ -20,7 +21,6 @@ public:
 	std::string getID(){return _id;}
 	int getOption(){return _option;}
 
-
 private:
 	void askWhatYouWannaDo();
 	void askID();
@@ -32,10 +32,8 @@ private:
 	sf::Text _blockText;
 	std::string _id, _ipString;
 	sf::RenderWindow _window;
-	
 	int _option;
 	sf::RectangleShape _LeftBlock;
 	sf::RectangleShape _CenterBlock;
 	sf::RectangleShape _RightBlock;
-	
 };
