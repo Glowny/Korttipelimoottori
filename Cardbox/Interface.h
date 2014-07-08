@@ -6,8 +6,8 @@ class Interface
 public:
 	Interface();
 	~Interface(void);
-	void addPlayer(std::string aleksi, sf::IpAddress ip);
+	void addPlayer(std::string aleksi, sf::IpAddress ip, int port);
+	Player getPlayer(int index){return _players[index];}
 private:
 	std::vector<Player>_players;
 };
-

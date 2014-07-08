@@ -3,20 +3,7 @@
 #include "SFML\Network.hpp"
 #include "SFML\Graphics.hpp"
 #include "Interface.h"
-
-enum PACKET_ID
-{
-	EMPTY,
-	START_GAME,
-	TURN_CARD,
-	PICK_UP_CARD,
-	RELEASE_CARD,
-	DRAW_FROM_DECK,
-	PUT_IN_DECK_TOP,
-	PUT_IN_DECK_BOT,
-	SHUFFLE,
-	MESSAGE,
-};
+#include "Enums.h"
 
 class Server
 {
@@ -25,17 +12,21 @@ public:
 	~Server(void);
 	void connectionPhase();
 	void reset();
-	void receive();
+	void receiveTCP();
+	void receiveUDP();
+	void sendUDP(int clientIndex, sf::Packet packet);
 	void update();
 	void run();
 
 private:
 	Interface _interface;
-	int _port;
+	unsigned short _port;
 	sf::TcpListener _listener;
 	sf::SocketSelector _selector;
 	std::vector<sf::TcpSocket*> _clients;
+	sf::UdpSocket _UDPreceive, _UDPsend;
 	sf::Packet _packet;
 	sf::Uint16 _packetID;
 	bool _gameOn;
+	sf::Clock _receiveTimer, _sendTimer;
 };

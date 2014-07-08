@@ -1,10 +1,11 @@
 #include "Player.h"
 
 
-Player::Player(std::string id, sf::IpAddress ip)
+Player::Player(std::string id, sf::IpAddress ip, unsigned short udpport)
 {
 	ID = id;
 	IP = ip;
+	UDPport = udpport;
 }
 
 
