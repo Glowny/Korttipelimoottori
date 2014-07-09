@@ -24,6 +24,7 @@ private:
 	sf::TcpSocket TCPsocket;
 	sf::UdpSocket UDPreceive, UDPsend;
 	sf::IpAddress serverIP;
+	std::vector<std::string>playerNames;
 	unsigned short serverPort;
 	sf::Packet packet;
 	sf::Uint16 packetID;
@@ -32,8 +33,11 @@ private:
 	sf::RenderWindow window;
 	sf::Clock _sendTimer;
 	sf::Uint16 ownIndex;
-	bool gameOn;
+	bool gameOn, mickeymouse;
 	std::vector<sf::RectangleShape> shapes;
+	sf::Time deltaTime_time;
 	sf::Clock deltaClock;
 	float deltaTime;
+	std::vector<sf::Color>playerColors;
+	std::string ownName;
 };

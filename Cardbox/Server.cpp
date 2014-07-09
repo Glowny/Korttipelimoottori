@@ -3,6 +3,8 @@
 
 Server::Server(void)
 {
+	dWindow = new DialogueWindow();
+	dWindow->hide();
 	_port = 2000;
 	_UDPreceive.bind(_port);
 	_UDPreceive.setBlocking(false);
@@ -10,6 +12,25 @@ Server::Server(void)
 	_listener.listen(_port);
 	_selector.add(_listener);
 	_gameOn = false;
+
+	_currentPhase = CONNECTIONS;
+
+	for(int i = 0; i < 7;i++)
+	{
+		_playerColors.push_back(sf::Color(i*32,255,i*32,255));
+	}
+
+	for(int i = 0; i < 7;i++)
+	{
+		_playerColors.push_back(sf::Color(255,i*32,i*32,255));
+	}
+
+	for(int i = 0; i < 7;i++)
+	{
+		_playerColors.push_back(sf::Color(i*32,i*32,255,255));
+	}
+
+	std::random_shuffle(_playerColors.begin(), _playerColors.end());
 }
 
 void Server::connectionPhase()
@@ -41,6 +62,69 @@ void Server::connectionPhase()
 			_selector.add(*TCPsocket);
 			
 		}
+	}
+
+	for(int i = 0; i < _clients.size(); i++)
+	{
+	_packet.clear();
+
+	_packetID = EMPTY;
+
+	_clients[i]->receive(_packet);
+
+	_packet>>_packetID;
+
+	switch(_packetID)
+	{
+	case EMPTY:
+		break;
+	case CONTINUE:
+		_currentPhase = DOWNLOADS;
+		dWindow->show();
+		break;
+	}
+	}
+}
+
+void Server::dialoguePhase()
+{
+	//k‰yd‰‰n dialogia
+
+
+	for(int i = 0; i < _clients.size(); i++)
+	{
+		_packet.clear();
+
+		_packetID = EMPTY;
+
+		_clients[i]->receive(_packet);
+
+		_packet>>_packetID;
+
+		sf::Uint16 playerIndex;
+		std::string filename;
+
+		switch(_packetID)
+		{
+		case EMPTY:
+			break;
+		case CONTINUE:
+			_currentPhase = GAME;
+			delete dWindow;
+			break;
+		case REQUEST_UPLOAD:
+			_packet>>playerIndex>>filename;
+			dWindow->addQuestion(_interface.getPlayer(playerIndex).ID, ("upload "+filename) );
+			break;
+		case ACCEPT_REQUEST:
+			break;
+		case DECLINE_REQUEST:
+			break;
+		case UPLOAD:
+			break;
+		}
+		int state = dWindow->getQuestionState(i);
+		//t‰h‰n tulee joku switchi ett‰ staten mukaan tapahtuu shitti‰
 	}
 }
 
@@ -79,6 +163,16 @@ void Server::receiveTCP()
 
 					_packet<<_packetID<<playerIndex<<playerCount;
 
+					for(int i = 0; i < playerCount;i++)
+					{
+						_packet<<_interface.getPlayer(i).ID;
+						sf::Uint16 r, g, b;
+						r = _playerColors[i].r;
+						g = _playerColors[i].g;
+						b = _playerColors[i].b;
+						_packet<<r<<g<<b;
+					}
+
 					_clients[j]->send(_packet);
 				}
 				_gameOn = true;
@@ -86,8 +180,10 @@ void Server::receiveTCP()
 			case TURN_CARD:
 				break;
 			case PICK_UP_CARD:
+				std::cout<<_interface.getPlayer(i).ID<<" picked up sum shit"<<std::endl;
 				break;
 			case RELEASE_CARD:
+				std::cout<<_interface.getPlayer(i).ID<<" dropped that shit"<<std::endl;
 				break;
 			case DRAW_FROM_DECK:
 				break;
@@ -154,11 +250,26 @@ void Server::sendUDP(int clientIndex, sf::Packet packet)
 
 void Server::update()
 {
-	if(!_gameOn)
+	switch(_currentPhase)
+	{
+	case CONNECTIONS:
 		connectionPhase();
-
-	receiveTCP();
-	receiveUDP();
+		break;
+	case DOWNLOADS:
+		dialoguePhase();
+		break;
+	case GAME:
+		receiveTCP();
+		receiveUDP();
+		break;
+	
+	}
+	/*if(!_gameOn)
+	{
+		connectionPhase();
+		dialoguePhase();
+	}
+	*/
 }
 void Server::run()
 {

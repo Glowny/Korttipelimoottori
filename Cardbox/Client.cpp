@@ -7,25 +7,35 @@ Client::Client(void) : window(sf::RenderWindow(sf::VideoMode(1280,760), "Cardbox
 	UDPreceive.bind(sf::Socket::AnyPort);
 	gameOn = false;
 	std::srand(time(NULL));
+
+	deltaTime_time = deltaClock.restart();
+	mickeymouse = false;
 }
 
 void Client::run()
 {
 	while(true)
 	{
-		deltaTime = deltaClock.getElapsedTime().asMilliseconds();
-		deltaClock.restart();
+		deltaTime_time = deltaClock.restart();
+		deltaTime = deltaTime_time.asMilliseconds();
 
 		checkInput();
 		receiveTCP();
 		if(gameOn)
 		{
+			shapes[ownIndex].setPosition(posX, posY);
 			sendPos();
 			receiveUDP();
 		}
 		for(int i = 0; i < shapes.size(); i++)
 		{
-		smootheMouse(i, shapes[i].getPosition() ,otherPlayersMousePos[i]);
+			if(i != ownIndex)
+			{
+				if(i>ownIndex)
+					smootheMouse(i, shapes[i].getPosition() ,otherPlayersMousePos[i-1]);
+				else
+					smootheMouse(i, shapes[i].getPosition() ,otherPlayersMousePos[i]);
+			}
 		}
 		draw();
 	}
@@ -33,6 +43,7 @@ void Client::run()
 
 void Client::connect(sf::IpAddress ip, int port, std::string id)
 {
+	ownName = id;
 	serverIP = ip;
 	serverPort = port;
 	TCPsocket.connect(serverIP,port);
@@ -42,6 +53,8 @@ void Client::connect(sf::IpAddress ip, int port, std::string id)
 	TCPsocket.setBlocking(false);
 	UDPreceive.setBlocking(false);
 	UDPsend.setBlocking(false);
+
+	window.setTitle(ownName);
 }
 
 void Client::sendPos()
@@ -79,8 +92,21 @@ void Client::receiveTCP()
 			break;
 		case START_GAME:
 			gameOn = true;
+			std::cout<<"gameOn = true"<<std::endl;
 			packet>>ownIndex>>playerCount;
+			for(int i = 0; i <playerCount;i++)
+			{
+				std::string name;
+				packet>>name;
+				
+				sf::Uint16 r,g,b;
+				packet>>r>>g>>b;
+
+				playerNames.push_back(name);
+				playerColors.push_back(sf::Color(r,g,b));
+			}
 			initPlayers();
+			window.setMouseCursorVisible(false);
 			break;
 	}
 }
@@ -91,7 +117,7 @@ void Client::smootheMouse(int index, sf::Vector2f oldpos,sf::Vector2f newpos)
 
 	if(homovector.x != 0 && homovector.y != 0)
 	{
-		shapes[index].move(homovector*0.005f*deltaTime);
+		shapes[index].move(homovector*deltaTime*0.005f);
 	}
 
 }
@@ -103,7 +129,6 @@ void Client::receiveUDP()
 	packetID = EMPTY;
 
 	unsigned short tempPort = UDPreceive.getLocalPort();
-
 	sf::IpAddress tempIP = serverIP;
 	UDPreceive.receive(packet, tempIP, tempPort);
 	
@@ -131,20 +156,15 @@ void Client::receiveUDP()
 
 void Client::initPlayers()
 {
-	for(int i = 0; i < playerCount-1; i++)
-	{
-		shapes.push_back(sf::RectangleShape(sf::Vector2f(10,10)));
-		otherPlayersMousePos.push_back(sf::Vector2f());
-		int red,green,blue;
-		red = std::rand()%255;
-		blue = std::rand()%255;
-		green = std::rand()%75;
-
-		sf::Color color(red,green,blue,255);
-
-		shapes[i].setFillColor(color);
-
-	}
+		for(int i = 0; i < playerCount; i++)
+		{
+			if(i != ownIndex)
+			{
+			otherPlayersMousePos.push_back(sf::Vector2f());
+			}
+			shapes.push_back(sf::RectangleShape(sf::Vector2f(10,10)));
+			shapes[i].setFillColor(playerColors[i]);
+		}
 }
 
 void Client::checkInput()
@@ -175,8 +195,28 @@ void Client::checkInput()
 			break;
 		case sf::Event::MouseButtonPressed:
 			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
+			{
 				std::cout<<"Mouse click X: "<<sf::Mouse::getPosition().x<<" Y: "<<sf::Mouse::getPosition().y<<std::endl;
+				packet.clear();
+				packetID = PICK_UP_CARD;
+				packet<<packetID;
+				TCPsocket.send(packet);
+				mickeymouse = true;
+			}
+
 			break;
+		}
+		
+		if(mickeymouse == true)
+		{
+			if(!sf::Mouse::isButtonPressed(sf::Mouse::Left))
+			{
+				packet.clear();
+				packetID = RELEASE_CARD;
+				packet<<packetID;
+				TCPsocket.send(packet);
+				mickeymouse = false;
+			}
 		}
 	}
 }

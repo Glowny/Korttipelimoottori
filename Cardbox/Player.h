@@ -6,9 +6,9 @@ class Player
 public:
 	Player(std::string id, sf::IpAddress ip, unsigned short udpport);
 	~Player(void);
-
-	sf::IpAddress IP;
+	
 	std::string ID;
+	sf::IpAddress IP;
 	unsigned short UDPport;
 };
 
