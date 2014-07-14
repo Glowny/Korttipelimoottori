@@ -9,6 +9,7 @@ public:
 	void changeTexture(sf::IntRect textureRect);
 	void resetTexture(){_sprite.setTextureRect(_textureRect);}
 	void setID(int id){_id = id;}
+	int getID(){return _id;}
 	sf::Sprite _sprite;
 private:
 	bool faceDown;

@@ -28,10 +28,14 @@ public:
 	void writeImageFile(std::string filename, std::string data, std::fstream* output);
 	void makeDeck(std::string filename,int cardAmount, sf::Vector2f cardSize);
 	void draw();
+	void checkHover(sf::Vector2i mousepos);
+	sf::Uint16 checkClick(sf::Vector2i mousepos);
 
 private:
 	void smootheMouse(int index, sf::Vector2f oldpos,sf::Vector2f newpos);
+	void moveCard(sf::Uint16 playerID, sf::Uint16 cardID);
 	std::vector<sf::Vector2f> otherPlayersMousePos;
+	std::vector<sf::Vector2f> otherPlayersMouseDist;
 	sf::TcpSocket TCPsocket;
 	sf::UdpSocket UDPreceive, UDPsend;
 	sf::IpAddress serverIP;
@@ -44,7 +48,6 @@ private:
 	sf::RenderWindow window;
 	sf::Clock _sendTimer;
 	sf::Uint16 ownIndex;
-	bool mickeymouse;
 	std::vector<sf::RectangleShape> shapes;
 	sf::Time deltaTime_time;
 	sf::Clock deltaClock;
@@ -57,5 +60,9 @@ private:
 	sf::Uint16 cardSizeX;
 	PHASE currentPhase;
 	std::vector<CardObject>cards;
+	sf::Uint16 pickedCard;
+	sf::Vector2f distance;
+	bool cardPicked;
+	std::vector<int>pickers;
 	//DialogueView* dView;
 };

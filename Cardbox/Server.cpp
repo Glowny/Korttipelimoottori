@@ -199,6 +199,8 @@ void Server::receiveTCP()
 
 		_clients[i]->receive(_packet);
 
+		sf::Uint16 x,y,cardID,playerIndex = i;
+		
 		_packet>>_packetID;
 
 		switch(_packetID)
@@ -208,10 +210,22 @@ void Server::receiveTCP()
 			case TURN_CARD:
 				break;
 			case PICK_UP_CARD:
-				std::cout<<_interface.getPlayer(i).ID<<" picked up sum shit"<<std::endl;
+				_packet>>cardID>>x>>y;
+				std::cout<<_interface.getPlayer(i).ID<<" picked up cardID: "<<cardID<<std::endl;
+				_packet.clear();
+				_packetID = PICK_UP_CARD;
+				_packet<<_packetID<<playerIndex<<cardID<<x<<y;
+				
+				for(int j = 0 ; j < _clients.size();j++)
+				{
+					if(j!= i)
+						_clients[j]->send(_packet);
+				}
+				
 				break;
 			case RELEASE_CARD:
-				std::cout<<_interface.getPlayer(i).ID<<" dropped that shit"<<std::endl;
+				_packet>>x>>y;
+				std::cout<<_interface.getPlayer(i).ID<<" dropped that shit on X: "<<x<<"Y: "<<y<<std::endl;
 				break;
 			case DRAW_FROM_DECK:
 				break;
@@ -410,7 +424,6 @@ void Server::sendImageFile(std::string filename,int index)
 	_clients[index]->send(_packet);
 }
 
-
 void Server::update()
 {
 	switch(_currentPhase)
@@ -427,6 +440,7 @@ void Server::update()
 		break;
 	}
 }
+
 void Server::run()
 {
 	while(true)
