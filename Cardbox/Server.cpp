@@ -3,15 +3,15 @@
 
 Server::Server(void)
 {
-	dWindow = new DialogueWindow();
-	dWindow->hide();
+	//_dWindow = new DialogueWindow();
+	//_dWindow->hide();
+	int totalCards = 0;
 	_port = 2000;
 	_UDPreceive.bind(_port);
 	_UDPreceive.setBlocking(false);
 	_UDPsend.setBlocking(false);
 	_listener.listen(_port);
 	_selector.add(_listener);
-	_gameOn = false;
 
 	_currentPhase = CONNECTIONS;
 
@@ -79,8 +79,23 @@ void Server::connectionPhase()
 	case EMPTY:
 		break;
 	case CONTINUE:
+
+		for(int j = 0; j < _clients.size(); j++)
+		{
+			sendStartPacket(j);
+
+			_packet.clear();
+			_packetID = CONTINUE;
+			_packet<<_packetID;
+			_clients[j]->send(_packet);
+			std::cout<<"Sending continue to "<<_interface.getPlayer(j).ID<<std::endl;
+		}
+
 		_currentPhase = DOWNLOADS;
-		dWindow->show();
+
+		std::cout<<"Server going to downloadsPhase"<<std::endl;
+
+		//_dWindow->show();
 		break;
 	}
 	}
@@ -89,7 +104,6 @@ void Server::connectionPhase()
 void Server::dialoguePhase()
 {
 	//k‰yd‰‰n dialogia
-
 
 	for(int i = 0; i < _clients.size(); i++)
 	{
@@ -101,30 +115,69 @@ void Server::dialoguePhase()
 
 		_packet>>_packetID;
 
-		sf::Uint16 playerIndex;
-		std::string filename;
+		sf::Uint16 playerIndex = i;
+		//int state = -1;
 
 		switch(_packetID)
 		{
 		case EMPTY:
+
+			/*state = _dWindow->checkQuestion(i);
+			switch(state)
+			{
+			case -1:
+				break;
+			case 0:
+				_packet.clear();
+				_packetID = DECLINE_REQUEST;
+				_clients[i]->send(_packet);
+				break;
+			case 1:
+				_packet.clear();
+				_packetID = ACCEPT_REQUEST;
+				_clients[i]->send(_packet);
+				break;
+			}*/
+
 			break;
 		case CONTINUE:
+
+			for(int j = 0; j < _clients.size(); j++)
+			{
+				_packet.clear();
+				_packetID = CONTINUE;
+				_packet<<_packetID;
+				_clients[j]->send(_packet);
+				std::cout<<"Sending continue to "<<_interface.getPlayer(j).ID<<std::endl;
+			}
+
 			_currentPhase = GAME;
-			delete dWindow;
+
+			std::cout<<"Server going to gamePhase"<<std::endl;
+
+			//_dWindow->close();
+			//delete _dWindow;
 			break;
 		case REQUEST_UPLOAD:
-			_packet>>playerIndex>>filename;
-			dWindow->addQuestion(_interface.getPlayer(playerIndex).ID, ("upload "+filename) );
+		
+			_packet>>tempFileName>>tempCardAmount>>tempCardSizeX>>tempCardSizeY;
+			totalCards+=tempCardAmount;
+			std::cout<<_interface.getPlayer(playerIndex).ID<<" sends request to upload "<<tempFileName<<"Amount: "<<tempCardAmount<<" X:"<<tempCardSizeX<<" Y:"<<tempCardSizeY<<std::endl;
+
+			_packet.clear();
+			_packetID = ACCEPT_REQUEST;
+			_packet<<_packetID;
+			_clients[playerIndex]->send(_packet);
+
+			receiveImageFile(tempFileName, playerIndex,tempCardAmount,tempCardSizeX,tempCardSizeY);
+			//_dWindow->addQuestion(playerIndex ,_interface.getPlayer(playerIndex).ID, ("upload "+filename) );
 			break;
 		case ACCEPT_REQUEST:
+			sendImageFile(tempFileName, playerIndex);
 			break;
 		case DECLINE_REQUEST:
 			break;
-		case UPLOAD:
-			break;
-		}
-		int state = dWindow->getQuestionState(i);
-		//t‰h‰n tulee joku switchi ett‰ staten mukaan tapahtuu shitti‰
+		}		
 	}
 }
 
@@ -152,31 +205,6 @@ void Server::receiveTCP()
 		{
 			case EMPTY:
 				break;
-			case START_GAME:
-				for(int j = 0; j < _clients.size(); j++)
-				{
-					_packet.clear();
-
-					_packetID = START_GAME;
-
-					sf::Uint16 playerIndex = j, playerCount = _clients.size();
-
-					_packet<<_packetID<<playerIndex<<playerCount;
-
-					for(int i = 0; i < playerCount;i++)
-					{
-						_packet<<_interface.getPlayer(i).ID;
-						sf::Uint16 r, g, b;
-						r = _playerColors[i].r;
-						g = _playerColors[i].g;
-						b = _playerColors[i].b;
-						_packet<<r<<g<<b;
-					}
-
-					_clients[j]->send(_packet);
-				}
-				_gameOn = true;
-				break;
 			case TURN_CARD:
 				break;
 			case PICK_UP_CARD:
@@ -201,8 +229,6 @@ void Server::receiveTCP()
 
 void Server::receiveUDP()
 {
-	/*if(_receiveTimer.getElapsedTime().asSeconds()>0.01f)
-	{*/
 	for(int i = 0; i < _clients.size(); i++)
 	{
 	_packet.clear();
@@ -238,8 +264,29 @@ void Server::receiveUDP()
 			break;
 		}
 	}
-	/*_receiveTimer.restart();
-	}*/
+}
+
+void Server::sendStartPacket(int clientIndex)
+{
+	_packet.clear();
+
+	_packetID = START;
+
+	sf::Uint16 playerIndex = clientIndex, playerCount = _clients.size();
+
+	_packet<<_packetID<<playerIndex<<playerCount;
+
+	for(int i = 0; i < playerCount;i++)
+	{
+		_packet<<_interface.getPlayer(i).ID;
+		sf::Uint16 r, g, b;
+		r = _playerColors[i].r;
+		g = _playerColors[i].g;
+		b = _playerColors[i].b;
+		_packet<<r<<g<<b;
+	}
+
+	_clients[clientIndex]->send(_packet);
 }
 
 void Server::sendUDP(int clientIndex, sf::Packet packet)
@@ -247,6 +294,122 @@ void Server::sendUDP(int clientIndex, sf::Packet packet)
 	if(_sendTimer.getElapsedTime().asMilliseconds()>5)
 		_UDPsend.send(packet,_interface.getPlayer(clientIndex).IP, _interface.getPlayer(clientIndex).UDPport);
 }
+
+void Server::receiveImageFile(std::string filename, int clientIndex, sf::Uint16 amount,sf::Uint16 x,sf::Uint16 y)
+{
+	sf::Clock uploadTime;
+
+	std::fstream *outputFile = new std::fstream;
+
+	*outputFile = std::fstream(filename+".png", std::ios::binary|std::ios::out);
+
+	bool done = false;
+	while(!done)
+	{
+		_packet.clear();
+		_packetID = EMPTY;
+
+		std::string data;
+		
+		_clients[clientIndex]->receive(_packet);
+
+		_packet>>_packetID;
+
+		switch(_packetID)
+		{
+		case UPLOAD:
+			std::cout<<"Received upload packet"<<std::endl;
+			_packet>>data;
+			writeImageFile(filename,data,outputFile);
+			break;
+		case UPLOAD_DONE:
+			std::cout<<"Client says upload done, I don't believe"<<std::endl;
+			std::cout<<uploadTime.getElapsedTime().asSeconds()<<std::endl;
+			done = true;
+			outputFile->close();
+			
+			_packet.clear();
+			_packetID = REQUEST_UPLOAD;
+			_packet<<_packetID<<tempFileName<<tempCardAmount<<tempCardSizeX<<tempCardSizeY;
+			for(int i = 0; i < _clients.size(); i++)
+			{
+				if(i != clientIndex)
+					_clients[i]->send(_packet);
+			}
+			break;
+		}
+	}
+}
+
+void Server::writeImageFile(std::string filename, std::string data, std::fstream* output)
+{
+	if(*output)
+	{
+		char buffer[16384];
+
+		sf::Uint16 dataStringSize = data.size();
+
+		for(int i = 0; i < dataStringSize; i++)
+		{
+			buffer[i] = data[i];
+		}
+
+		for(int i = 0; i < dataStringSize; i++)
+		{
+			output->write(&buffer[i], 1);
+		}
+	}
+}
+
+void Server::sendImageFile(std::string filename,int index)
+{
+	std::fstream inputFile(filename+".png", std::ios::binary|std::ios::in);
+
+	if(inputFile)
+	{
+		
+		char buffer[16384];
+		std::string sendString;
+		bool done = false;
+		int i;
+
+		_packetID = UPLOAD;
+
+		while(!done)
+		{
+			_packet.clear();
+			_packet<<_packetID;
+
+			i = 0;
+
+			while(i < 16384 && inputFile.peek() != EOF)
+			{
+				inputFile.read(&buffer[i], 1);
+
+				i++;
+
+				if(inputFile.peek() == EOF)
+					done = true;
+			}
+
+			for(int j = 0; j < i; j++)
+			{
+				sendString.push_back(buffer[j]);
+			}
+			std::cout<<"Sending buffer"<<std::endl;
+			_packet<<sendString;
+			_clients[index]->send(_packet);
+			sendString.clear();
+		}
+		inputFile.close();
+	}
+	std::cout<<"Done sending stuff"<<std::endl;
+	_packet.clear();
+	_packetID = UPLOAD_DONE;
+	_packet<<_packetID;
+	_clients[index]->send(_packet);
+}
+
 
 void Server::update()
 {
@@ -262,14 +425,7 @@ void Server::update()
 		receiveTCP();
 		receiveUDP();
 		break;
-	
 	}
-	/*if(!_gameOn)
-	{
-		connectionPhase();
-		dialoguePhase();
-	}
-	*/
 }
 void Server::run()
 {

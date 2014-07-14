@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 #include "SFML\Network.hpp"
 #include "SFML\Graphics.hpp"
 #include "Interface.h"
@@ -17,9 +18,13 @@ public:
 	void reset();
 	void receiveTCP();
 	void receiveUDP();
+	void sendStartPacket(int clienIndex);
 	void sendUDP(int clientIndex, sf::Packet packet);
+	void receiveImageFile(std::string filename, int clientIndex, sf::Uint16 amount,sf::Uint16 x,sf::Uint16 y);
+	void writeImageFile(std::string filename, std::string data,  std::fstream* output);
 	void update();
 	void run();
+	void sendImageFile(std::string filename, int index);
 
 private:
 	PHASE _currentPhase;
@@ -31,8 +36,12 @@ private:
 	sf::UdpSocket _UDPreceive, _UDPsend;
 	sf::Packet _packet;
 	sf::Uint16 _packetID;
-	bool _gameOn;
 	sf::Clock _receiveTimer, _sendTimer;
 	std::vector<sf::Color> _playerColors;
-	DialogueWindow* dWindow;
+	std::string tempFileName;
+	int totalCards;
+	sf::Uint16 tempCardSizeY;
+	sf::Uint16 tempCardSizeX;
+	sf::Uint16 tempCardAmount;
+	//DialogueWindow* _dWindow;
 };

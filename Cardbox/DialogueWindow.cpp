@@ -5,13 +5,13 @@ DialogueWindow::DialogueWindow(void):window(sf::RenderWindow(sf::VideoMode(550, 
 {
 }
 
-void DialogueWindow::addQuestion(std::string who, std::string what)
+void DialogueWindow::addQuestion(int playerIndex, std::string who, std::string what)
 {
-	float posY = questions.size()*100.f;
-	questions.push_back(QuestionBar(who,what,sf::Vector2f(0, posY)));
+	float posY = questionsMap.size()*100.f;
+	questionsMap[playerIndex] = QuestionBar(who,what,sf::Vector2f(0, posY));
 }
 
-void DialogueWindow::checkQuestions()
+int DialogueWindow::checkQuestion(int index)
 {
 	sf::Event Event;
 
@@ -22,10 +22,10 @@ void DialogueWindow::checkQuestions()
 		case sf::Event::MouseButtonPressed:
 				if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
 				{
-					for(int i = 0; i < questions.size(); i++)
-					{
-						//if(questions[i].checkClick(sf::Mouse::getPosition()) == 1)
-					}
+					mapIT = questionsMap.find(index);
+					if(mapIT != questionsMap.end())
+						return (*mapIT).second.checkClick(sf::Mouse::getPosition());
+					return -1;
 				}
 		}
 	}
@@ -33,9 +33,9 @@ void DialogueWindow::checkQuestions()
 
 void DialogueWindow::arrange()
 {
-	for(int i = 0; i < questions.size(); i++)
+	for(int i = 0; i < questionsMap.size(); i++)
 	{
-		questions[i].setPos(sf::Vector2f(0, i*100.f));
+		questionsMap[i].setPos(sf::Vector2f(0, i*100.f));
 	}
 }
 
@@ -51,11 +51,16 @@ void DialogueWindow::show()
 	window.setVisible(true);
 }
 
+void DialogueWindow::close()
+{
+	window.close();
+}
+
 void DialogueWindow::draw()
 {
-	for(int i = 0; i < questions.size(); i++)
+	for(int i = 0; i < questionsMap.size(); i++)
 	{
-		questions[i].draw(window);
+		questionsMap[i].draw(window);
 	}
 }
 

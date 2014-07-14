@@ -5,6 +5,7 @@ class QuestionBar
 {
 public:
 	void draw(sf::RenderWindow &window);
+	QuestionBar(){}
 	QuestionBar(std::string who, std::string what,sf::Vector2f pos);
 	int checkClick(sf::Vector2i pos);
 	void setPos(sf::Vector2f pos);
@@ -14,4 +15,3 @@ private:
 	sf::RectangleShape bar,yesbar,nobar;
 	sf::Text question,yes,no;
 };
-

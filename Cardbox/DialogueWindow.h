@@ -1,20 +1,22 @@
 #pragma once
 #include <SFML\Graphics.hpp>
+#include <map>
 #include "QuestionBar.h"
 class DialogueWindow
 {
 public:
 	DialogueWindow(void);
 	~DialogueWindow(void);
-	void addQuestion(std::string who, std::string what);
-	void checkQuestions();
+	void addQuestion(int playerIndex, std::string who, std::string what);
+	int checkQuestion(int index);
 	void draw();
 	void hide();
 	void show();
-	int getQuestionState(int index){/*haetaan pelaajan questionin tila jostain multimäpistä tai jostain, tai jotain :DDDD*/};
+	void close();
 private:
 	void arrange();
 	sf::RenderWindow window;
 	std::string who,what;
-	std::vector<QuestionBar> questions;
+	std::map<int, QuestionBar> questionsMap;
+	std::map<int, QuestionBar>::iterator mapIT;
 };
