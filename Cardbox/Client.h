@@ -28,10 +28,14 @@ public:
 	void writeImageFile(std::string filename, std::string data, std::fstream* output);
 	void makeDeck(std::string filename,int cardAmount, sf::Vector2f cardSize);
 	void draw();
-	void checkHover(sf::Vector2i mousepos);
+	void checkRoll(sf::Vector2i mousepos, int delta);
 	sf::Uint16 checkClick(sf::Vector2i mousepos);
+	void putCardOnTop(int cardID);
+	void checkCardOwnage(int cardID);
 
 private:
+	sf::Clock scaleTimer;
+	void scaleCardsNormal();
 	void smootheMouse(int index, sf::Vector2f oldpos,sf::Vector2f newpos);
 	void moveCard(sf::Uint16 playerID, sf::Uint16 cardID);
 	std::vector<sf::Vector2f> otherPlayersMousePos;
@@ -63,6 +67,8 @@ private:
 	sf::Uint16 pickedCard;
 	sf::Vector2f distance;
 	bool cardPicked;
-	std::vector<int>pickers;
+	std::vector<int> pickers;
+	std::vector<int> pickings;
+	int lastScaled;
 	//DialogueView* dView;
 };

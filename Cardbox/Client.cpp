@@ -1,18 +1,28 @@
 #include "Client.h"
 #include <iostream>
 
-Client::Client(void) : window(sf::RenderWindow(sf::VideoMode(1280,760), "Cardbox"))
+Client::Client(void) : window(sf::RenderWindow(sf::VideoMode(760,760), "Cardbox"))
 {
 	window.setFramerateLimit(60);
 	UDPreceive.bind(sf::Socket::AnyPort);
 	std::srand(time(NULL));
 
+	lastScaled = -1;
 	currentPhase = CONNECTIONS;
 
 	deltaTime_time = deltaClock.restart();
 	cardPicked = false;
 
 	//dView = new DialogueView();
+}
+
+void Client::scaleCardsNormal()
+{
+	for(int i = 0; i < cards.size();i++)
+	{
+		if(cards[i]._sprite.getScale()!=sf::Vector2f(0.3f,0.3f) && !cards[i]._sprite.getGlobalBounds().contains(sf::Vector2f(sf::Mouse::getPosition(window))))
+			cards[i]._sprite.setScale(0.3f,0.3f);
+	}
 }
 
 void Client::run()
@@ -176,6 +186,12 @@ void Client::gamePhase()
 	receiveUDP();
 	receiveTCP();
 
+	//if(scaleTimer.getElapsedTime().asSeconds()>6.0)
+	//	{
+	//		scaleCardsNormal();
+	//		scaleTimer.restart();
+	//	}
+
 	for(int i = 0; i < shapes.size(); i++)
 	{
 		if(i != ownIndex)
@@ -184,6 +200,14 @@ void Client::gamePhase()
 				smootheMouse(i, shapes[i].getPosition() ,otherPlayersMousePos[i-1]);
 			else
 				smootheMouse(i, shapes[i].getPosition() ,otherPlayersMousePos[i]);
+		}
+	}
+
+	if(pickers.size()>0)
+	{
+		for(int i = 0; i < pickers.size();i++)
+		{
+			moveCard(pickers[i],pickings[i]);
 		}
 	}
 }
@@ -216,18 +240,51 @@ void Client::receiveTCP()
 
 	packet>>packetID;
 
+	sf::Uint16 playerID,cardID,x,y;
+
 	switch(packetID)
 	{
 
 	case PICK_UP_CARD:
 		//saaattaa räjähtää mutta ei kuitenkaan räjähä
-		sf::Uint16 playerID,cardID,x,y;
 		packet>>playerID>>cardID>>x>>y;
-		std::cout <<"player "<<playerID<<"picked "<<cardID<<"from X: "<<x<<"Y: "<<y<<std::endl;
+		std::cout <<"player "<<playerID<<"picked "<<cardID<<" from X: "<<x<<"Y: "<<y<<std::endl;
+		checkCardOwnage(cardID);
+		pickers.push_back(playerID);
+		pickings.push_back(cardID);
+		putCardOnTop(cardID);
 		if(playerID > ownIndex)
 			playerID--;
 		otherPlayersMouseDist[playerID] = sf::Vector2f(x,y);
-		pickers.push_back(playerID);
+		break;
+	case RELEASE_CARD:
+		packet>>playerID>>x>>y;
+		std::cout <<"player "<<playerID<<" dropped that shit to X: "<<x<<" Y: "<<y<<std::endl;
+		for(int i = 0; i < pickers.size(); i++)
+		{
+			if(pickers[i] == playerID)
+			{
+				for(int j = 0; j < cards.size(); j++)
+				{
+					if(cards[j].getID() == pickings[i])
+					{
+						cards[j]._sprite.setPosition(sf::Vector2f(x,y));
+						break;
+					}
+				}
+
+				pickers.erase(pickers.begin()+i);
+				pickings.erase(pickings.begin()+i);
+				break;
+			}
+
+		}
+		break;
+	case TURN_CARD:
+		packet>>playerID>>cardID;
+		std::cout <<"player "<<playerID<<"turned "<<cardID<<std::endl;
+		putCardOnTop(cardID);
+		cards[0].swapTexture();
 		break;
 		case EMPTY:
 			break;
@@ -295,15 +352,61 @@ void Client::checkInput()
 {
 	sf::Event Event;
 
-	
+
 	while(window.pollEvent(Event))
 	{
 		
 		posX = sf::Mouse::getPosition(window).x;
 		posY = sf::Mouse::getPosition(window).y;
-
+		
 		switch(Event.type)
 		{
+
+		case sf::Event::MouseWheelMoved:
+			//checkRoll(sf::Mouse::getPosition(window),Event.mouseWheel.delta);
+			if(Event.mouseWheel.delta>0)
+			{
+				window.setView(sf::View(sf::Vector2f(posX,posY),sf::Vector2f(window.getSize().x*0.5f,window.getSize().y*0.5f)));
+				int viewLeft = posX - window.getView().getSize().x*0.5f;
+				int viewRight = posX + window.getView().getSize().x*0.5f;
+				int viewTop = posY - window.getView().getSize().y*0.5f;
+				int viewBot = posY + window.getView().getSize().y*0.5f;
+				int offsetX=0,offsetY=0;
+
+				std::cout<<"LEFT: "<<viewLeft<<std::endl;
+				std::cout<<"RIGHT: "<<viewRight<<std::endl;
+				std::cout<<"TOP: "<<viewTop<<std::endl;
+				std::cout<<"BOT: "<<viewBot<<std::endl;
+
+				if(viewLeft<0)
+				{
+					offsetX = -viewLeft;
+				}
+				
+				if(viewRight>window.getSize().x)
+				{
+					offsetX = viewRight-window.getSize().x;
+					offsetX*=-1;
+				}
+
+				if(viewTop<0)
+				{
+					offsetY = -viewTop;
+				}
+				
+				if(viewBot>window.getSize().y)
+				{
+					offsetY = viewBot-window.getSize().y;
+					offsetY*=-1;
+				}
+				window.setView(sf::View(sf::Vector2f(posX+offsetX,posY+offsetY),sf::Vector2f(window.getSize().x*0.5f,window.getSize().y*0.5f)));
+			}
+
+			if(Event.mouseWheel.delta<0)
+			{
+				window.setView(sf::View(sf::Vector2f(window.getSize().x*0.5f,window.getSize().y*0.5f),sf::Vector2f(window.getSize().x*1.0f,window.getSize().y*1.0f)));
+			}
+			break;
 
 		case sf::Event::Closed:
 			window.close();
@@ -346,14 +449,16 @@ void Client::checkInput()
 			break;
 			
 		case sf::Event::MouseButtonPressed:
-			if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
+			if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && !sf::Mouse::isButtonPressed(sf::Mouse::Right))
 			{
 				sf::Uint16 distanceX,distanceY,cardID = checkClick(sf::Mouse::getPosition(window));
 				std::cout <<cardID<<std::endl;
 
 				if(cardID != 1337)
 				{
+				std::cout<<"I picks card"<<std::endl;
 				pickers.push_back(ownIndex);
+				pickings.push_back(cardID);
 				distance = sf::Vector2f(posX,posY)-cards[0]._sprite.getPosition();
 				std::cout<<"Mouse click X: "<<sf::Mouse::getPosition(window).x<<" Y: "<<sf::Mouse::getPosition(window).y<<std::endl;
 				packet.clear();
@@ -365,19 +470,36 @@ void Client::checkInput()
 				TCPsocket.send(packet);
 				}
 			}
+			if(sf::Mouse::isButtonPressed(sf::Mouse::Right))
+			{
+				sf::Uint16 cardID = checkClick(sf::Mouse::getPosition(window));
+
+				if(cardID != 1337)
+				{
+					cards[0].swapTexture();
+				
+					packet.clear();
+					packetID = TURN_CARD;
+					packet<<packetID<<cardID;
+					TCPsocket.send(packet);
+				}
+			}
 			break;
 		}
 			
 		if(cardPicked)
 		{
-		
-
 			if(!sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
 				for(int i = 0; i < pickers.size();i++)
 				{
 					if(pickers[i] == ownIndex)
+					{
+					std::cout<<"I drops card"<<std::endl;
 					pickers.erase(pickers.begin()+i);
+					pickings.erase(pickings.begin()+i);
+					break;
+					}
 				}
 
 				cardPicked = false;
@@ -392,13 +514,6 @@ void Client::checkInput()
 		}
 		
 	}
-	
-	if(pickers.size()>0)
-		for(int i = 0; i < pickers.size();i++)
-		{
-			moveCard(pickers[i],pickedCard);
-		}
-
 }
 
 sf::Uint16 Client::checkClick(sf::Vector2i mousepos)
@@ -424,11 +539,47 @@ sf::Uint16 Client::checkClick(sf::Vector2i mousepos)
 	
 }
 
-void Client::checkHover(sf::Vector2i mousepos)
+void Client::checkRoll(sf::Vector2i mousepos,int delta)
 {
-	
-}
+	sf::Vector2f mouse(mousepos);
+	bool scaled = true;
 
+	for(int i = 0; i < cards.size();i++)
+	{
+		if(cards[i]._sprite.getGlobalBounds().contains(mouse))
+		{
+
+			if(delta<0)
+			{
+				if(cards[i]._sprite.getScale() == sf::Vector2f(0.3f,0.3f))
+					cards[i]._sprite.setScale(0.4f,0.4f);
+				else if(cards[i]._sprite.getScale() == sf::Vector2f(0.4f,0.4f))
+					cards[i]._sprite.setScale(0.5f,0.5f);
+				else
+					scaled = false;
+			}
+
+			if(delta>0)
+				{
+
+					if(cards[i]._sprite.getScale() == sf::Vector2f(0.4f,0.4f))
+						cards[i]._sprite.setScale(0.3f,0.3f);
+					else if(cards[i]._sprite.getScale() == sf::Vector2f(0.5f,0.5f))
+						cards[i]._sprite.setScale(0.4f,0.4f);
+					else
+						scaled = false;
+				}
+
+			if(scaled)
+				putCardOnTop(cards[i].getID());
+
+
+			break;
+		}	
+		
+	}
+
+}
 
 void Client::moveCard(sf::Uint16 playerID,sf::Uint16 cardID)
 {
@@ -439,18 +590,22 @@ void Client::moveCard(sf::Uint16 playerID,sf::Uint16 cardID)
 			
 			if(playerID != ownIndex)
 			{
-				cards[i]._sprite.setPosition(otherPlayersMousePos[playerID]-otherPlayersMouseDist[playerID]);
+				if(playerID > ownIndex)
+					cards[i]._sprite.setPosition(shapes[playerID].getPosition()-otherPlayersMouseDist[playerID-1]);
+				else
+					cards[i]._sprite.setPosition(shapes[playerID].getPosition()-otherPlayersMouseDist[playerID]);
 			}
 
 			else
 			{
-				std::cout<<distance.x<<distance.y<<std::endl;
+				//std::cout<<distance.x<<distance.y<<std::endl;
 				cards[i]._sprite.setPosition(sf::Vector2f(sf::Mouse::getPosition(window))-distance);
 			}
 		}
 	}
 
 }
+
 void Client::sendImageFile(std::string filename)
 {
 	std::fstream inputFile(filename+".png", std::ios::binary|std::ios::in);
@@ -600,9 +755,40 @@ void Client::makeDeck(std::string filename, int cardAmount,sf::Vector2f cardSize
 	for(int i = size; i < cards.size();i++)
 	{
 		cards[i].setID(i);
-		cards[i].changeTexture(backRect);
+		cards[i].setBackRect(backRect);
+		cards[i].swapTexture();
+		cards[i]._sprite.setScale(0.3f,0.3f);
 	}
 
+}
+
+void Client::putCardOnTop(int cardID)
+{
+	for(int i = 0; i < cards.size(); i++)
+	{
+		if(cards[i].getID() == cardID)
+		{
+			CardObject temp = cards[i];
+			cards.erase(cards.begin()+i);
+			cards.insert(cards.begin(),temp);
+			break;
+		}
+	}
+}
+
+void Client::checkCardOwnage(int cardID)
+{ 
+	//Tää on hyvä kommentti, joka selkeyttää asioita. Rakkaudella Vesalle
+	for(int i = 0; i < pickings.size(); i++)
+	{
+		if(pickings[i] == cardID)
+		{
+			pickings.erase(pickings.begin()+i);
+			pickers.erase(pickers.begin()+i);
+			cardPicked = false;
+			break;
+		}
+	}
 }
 
 void Client::draw()

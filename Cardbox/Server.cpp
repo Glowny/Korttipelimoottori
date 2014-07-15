@@ -208,6 +208,18 @@ void Server::receiveTCP()
 			case EMPTY:
 				break;
 			case TURN_CARD:
+				_packet>>cardID;
+				std::cout<<_interface.getPlayer(i).ID<<" turned cardID: "<<cardID<<std::endl;
+
+				_packet.clear();
+				_packetID = TURN_CARD;
+				_packet<<_packetID<<playerIndex<<cardID;
+
+				for(int j = 0; j < _clients.size(); j++)
+				{
+					if(j!=i)
+						_clients[j]->send(_packet);
+				}
 				break;
 			case PICK_UP_CARD:
 				_packet>>cardID>>x>>y;
@@ -225,7 +237,16 @@ void Server::receiveTCP()
 				break;
 			case RELEASE_CARD:
 				_packet>>x>>y;
-				std::cout<<_interface.getPlayer(i).ID<<" dropped that shit on X: "<<x<<"Y: "<<y<<std::endl;
+				std::cout<<_interface.getPlayer(i).ID<<" dropped that shit on X: "<<x<<" Y: "<<y<<std::endl;
+				_packet.clear();
+				_packetID = RELEASE_CARD;
+				_packet<<_packetID<<playerIndex<<x<<y;
+
+				for(int j = 0 ; j < _clients.size();j++)
+				{
+					if(j!= i)
+						_clients[j]->send(_packet);
+				}
 				break;
 			case DRAW_FROM_DECK:
 				break;

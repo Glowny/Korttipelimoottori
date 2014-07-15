@@ -158,8 +158,8 @@ int main2(){
 						if(cardObjects[hoveredCard]._sprite.getTextureRect()!=backRect)
 							cardObjects[hoveredCard].changeTexture(backRect);
 							
-						else
-							cardObjects[hoveredCard].resetTexture();
+						//else
+							//cardObjects[hoveredCard].resetTexture();
 					}
 				}
 			}
@@ -205,5 +205,3 @@ int main2(){
 	}
 
 	}
-
-
