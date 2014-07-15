@@ -13,6 +13,9 @@ Server::Server(void)
 	_listener.listen(_port);
 	_selector.add(_listener);
 
+	_theSeed = time(NULL);
+	std::srand(_theSeed);
+
 	_currentPhase = CONNECTIONS;
 
 	for(int i = 0; i < 7;i++)
@@ -200,7 +203,9 @@ void Server::receiveTCP()
 		_clients[i]->receive(_packet);
 
 		sf::Uint16 x,y,cardID,playerIndex = i;
-		
+
+		sf::Uint16 seed = _theSeed;
+
 		_packet>>_packetID;
 
 		switch(_packetID)
@@ -255,6 +260,15 @@ void Server::receiveTCP()
 			case PUT_IN_DECK_BOT:
 				break;
 			case SHUFFLE:
+				_packet.clear();
+				_packetID = SHUFFLE;
+
+				_packet<<_packetID<<seed;
+
+				for(int j = 0; j < _clients.size(); j++)
+				{
+					_clients[j]->send(_packet);
+				}
 				break;
 			case MESSAGE:
 				break;

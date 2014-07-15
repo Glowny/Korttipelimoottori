@@ -244,7 +244,20 @@ void Client::receiveTCP()
 
 	switch(packetID)
 	{
-
+	case SHUFFLE:
+		//FUNKTIO TÄLLE PLZ, eri dekeille vois omat ja kaikkeee
+		sf::Uint16 seed;
+		packet>>seed;
+		std::srand(seed);
+		std::random_shuffle(cards.begin(), cards.end());
+		cardPicked = false;
+		pickers.clear();
+		pickings.clear();
+		for(int i = 0; i < cards.size(); i++)
+		{
+			cards[i]._sprite.setPosition(0,0);
+		}
+		break;
 	case PICK_UP_CARD:
 		//saaattaa räjähtää mutta ei kuitenkaan räjähä
 		packet>>playerID>>cardID>>x>>y;
@@ -414,6 +427,13 @@ void Client::checkInput()
 		case sf::Event::KeyPressed:
 			if(Event.key.code == sf::Keyboard::Escape)
 				window.close();
+			if(Event.key.code == sf::Keyboard::R && currentPhase == GAME)
+			{
+				packet.clear();
+				packetID = SHUFFLE;
+				packet<<packetID;
+				TCPsocket.send(packet);
+			}
 			if(Event.key.code == sf::Keyboard::Space && currentPhase != GAME)
 			{
 				packet.clear();
@@ -441,6 +461,18 @@ void Client::checkInput()
 				cardSizeX = 170;
 				cardSizeY = 340;
 				fileName = "karjalainen";
+				packet.clear();
+				packetID = REQUEST_UPLOAD;
+				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
+				TCPsocket.send(packet);
+			}
+			if(Event.key.code == sf::Keyboard::Num3 && currentPhase == DOWNLOADS)
+			{
+				std::cout<<"Sending upload request"<<std::endl;
+				cardAmount = 57;
+				cardSizeX = 256;
+				cardSizeY = 256;
+				fileName = "Jigsaw";
 				packet.clear();
 				packetID = REQUEST_UPLOAD;
 				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;

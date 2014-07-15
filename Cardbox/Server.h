@@ -43,5 +43,6 @@ private:
 	sf::Uint16 tempCardSizeY;
 	sf::Uint16 tempCardSizeX;
 	sf::Uint16 tempCardAmount;
+	int _theSeed;
 	//DialogueWindow* _dWindow;
 };
