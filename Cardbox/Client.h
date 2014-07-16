@@ -30,8 +30,11 @@ public:
 	void draw();
 	void checkRoll(sf::Vector2i mousepos, int delta);
 	sf::Uint16 checkClick(sf::Vector2i mousepos);
+	void zoomzoom(int delta);
+	void correctView(sf::Vector2f viewSize);
 	void putCardOnTop(int cardID);
 	void checkCardOwnage(int cardID);
+	
 
 private:
 	sf::Clock scaleTimer;

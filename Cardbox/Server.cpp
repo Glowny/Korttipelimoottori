@@ -59,7 +59,8 @@ void Server::connectionPhase()
 
 			sf::IpAddress ip = TCPsocket->getRemoteAddress();
 
-			std::cout<<id<<" has connected to the session"<<std::endl;
+			std::cout<<id<<" has connected to the session";
+			std::cout<<" with ip: "<<ip.toString()<<" & port: "<<clientUDPport<<std::endl;
 			_interface.addPlayer(id,ip,clientUDPport);
 			_clients.push_back(TCPsocket);
 			_selector.add(*TCPsocket);
@@ -171,11 +172,13 @@ void Server::dialoguePhase()
 			_packetID = ACCEPT_REQUEST;
 			_packet<<_packetID;
 			_clients[playerIndex]->send(_packet);
+			_clients[playerIndex]->setBlocking(true);
 
 			receiveImageFile(tempFileName, playerIndex,tempCardAmount,tempCardSizeX,tempCardSizeY);
 			//_dWindow->addQuestion(playerIndex ,_interface.getPlayer(playerIndex).ID, ("upload "+filename) );
 			break;
 		case ACCEPT_REQUEST:
+			_clients[playerIndex]->setBlocking(true);
 			sendImageFile(tempFileName, playerIndex);
 			break;
 		case DECLINE_REQUEST:
@@ -347,6 +350,7 @@ void Server::sendUDP(int clientIndex, sf::Packet packet)
 void Server::receiveImageFile(std::string filename, int clientIndex, sf::Uint16 amount,sf::Uint16 x,sf::Uint16 y)
 {
 	sf::Clock uploadTime;
+	int packetCounter = 0;
 
 	std::fstream *outputFile = new std::fstream;
 
@@ -368,14 +372,17 @@ void Server::receiveImageFile(std::string filename, int clientIndex, sf::Uint16 
 		{
 		case UPLOAD:
 			std::cout<<"Received upload packet"<<std::endl;
+			packetCounter++;
 			_packet>>data;
 			writeImageFile(filename,data,outputFile);
 			break;
 		case UPLOAD_DONE:
 			std::cout<<"Client says upload done, I don't believe"<<std::endl;
-			std::cout<<uploadTime.getElapsedTime().asSeconds()<<std::endl;
+			std::cout<<"Time: "<<uploadTime.getElapsedTime().asSeconds()<<std::endl;
+			std::cout<<"Number of packets received: "<<packetCounter<<std::endl;
 			done = true;
 			outputFile->close();
+			_clients[clientIndex]->setBlocking(false);
 			
 			_packet.clear();
 			_packetID = REQUEST_UPLOAD;
@@ -394,9 +401,11 @@ void Server::writeImageFile(std::string filename, std::string data, std::fstream
 {
 	if(*output)
 	{
-		char buffer[16384];
+		char buffer[1024];
 
 		sf::Uint16 dataStringSize = data.size();
+
+		std::cout<<"Data string size: "<<dataStringSize<<std::endl;
 
 		for(int i = 0; i < dataStringSize; i++)
 		{
@@ -412,12 +421,13 @@ void Server::writeImageFile(std::string filename, std::string data, std::fstream
 
 void Server::sendImageFile(std::string filename,int index)
 {
+	int packetCounter = 0;
 	std::fstream inputFile(filename+".png", std::ios::binary|std::ios::in);
 
 	if(inputFile)
 	{
 		
-		char buffer[16384];
+		char buffer[1024];
 		std::string sendString;
 		bool done = false;
 		int i;
@@ -431,7 +441,7 @@ void Server::sendImageFile(std::string filename,int index)
 
 			i = 0;
 
-			while(i < 16384 && inputFile.peek() != EOF)
+			while(i < 1024 && inputFile.peek() != EOF)
 			{
 				inputFile.read(&buffer[i], 1);
 
@@ -446,6 +456,7 @@ void Server::sendImageFile(std::string filename,int index)
 				sendString.push_back(buffer[j]);
 			}
 			std::cout<<"Sending buffer"<<std::endl;
+			packetCounter++;
 			_packet<<sendString;
 			_clients[index]->send(_packet);
 			sendString.clear();
@@ -453,10 +464,12 @@ void Server::sendImageFile(std::string filename,int index)
 		inputFile.close();
 	}
 	std::cout<<"Done sending stuff"<<std::endl;
+	std::cout<<"Number of packets sent: "<<packetCounter<<std::endl;
 	_packet.clear();
 	_packetID = UPLOAD_DONE;
 	_packet<<_packetID;
 	_clients[index]->send(_packet);
+	_clients[index]->setBlocking(false);
 }
 
 void Server::update()
