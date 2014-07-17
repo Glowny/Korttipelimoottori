@@ -9,6 +9,7 @@ public:
 	void setBackRect(sf::IntRect backRect){_backRect = backRect;}
 	void changeTexture(sf::IntRect textureRect);
 	void swapTexture();
+	void backSideUp(){_sprite.setTextureRect(_backRect);}
 	void setID(int id){_id = id;}
 	int getID(){return _id;}
 	sf::Sprite _sprite;

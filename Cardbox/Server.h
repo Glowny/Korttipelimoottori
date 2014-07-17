@@ -20,7 +20,7 @@ public:
 	void receiveUDP();
 	void sendStartPacket(int clienIndex);
 	void sendUDP(int clientIndex, sf::Packet packet);
-	void receiveImageFile(std::string filename, int clientIndex, sf::Uint16 amount,sf::Uint16 x,sf::Uint16 y);
+	void receiveImageFile(std::string filename, int clientIndex, sf::Int16 amount,sf::Int16 x,sf::Int16 y);
 	void writeImageFile(std::string filename, std::string data,  std::fstream* output);
 	void update();
 	void run();
@@ -35,14 +35,14 @@ private:
 	std::vector<sf::TcpSocket*> _clients;
 	sf::UdpSocket _UDPreceive, _UDPsend;
 	sf::Packet _packet;
-	sf::Uint16 _packetID;
+	sf::Int16 _packetID;
 	sf::Clock _receiveTimer, _sendTimer;
 	std::vector<sf::Color> _playerColors;
 	std::string tempFileName;
 	int totalCards;
-	sf::Uint16 tempCardSizeY;
-	sf::Uint16 tempCardSizeX;
-	sf::Uint16 tempCardAmount;
+	sf::Int16 tempCardSizeY;
+	sf::Int16 tempCardSizeX;
+	sf::Int16 tempCardAmount;
 	int _theSeed;
 	//DialogueWindow* _dWindow;
 };

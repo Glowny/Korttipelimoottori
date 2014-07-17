@@ -43,7 +43,7 @@ void Server::connectionPhase()
 		if(_selector.isReady(_listener))
 		{	
 			std::string id;
-			sf::Uint16 clientUDPport;
+			sf::Int16 clientUDPport;
 
 			sf::TcpSocket* TCPsocket = new sf::TcpSocket;
 			
@@ -119,7 +119,7 @@ void Server::dialoguePhase()
 
 		_packet>>_packetID;
 
-		sf::Uint16 playerIndex = i;
+		sf::Int16 playerIndex = i;
 		//int state = -1;
 
 		switch(_packetID)
@@ -205,15 +205,29 @@ void Server::receiveTCP()
 
 		_clients[i]->receive(_packet);
 
-		sf::Uint16 x,y,cardID,playerIndex = i;
+		sf::Int16 x,y,cardID,playerIndex = i;
 
-		sf::Uint16 seed = _theSeed;
+		sf::Int16 seed = _theSeed;
 
 		_packet>>_packetID;
 
 		switch(_packetID)
 		{
 			case EMPTY:
+				break;
+			case ROTATE_CARD:
+				_packet>>cardID;
+				std::cout<<_interface.getPlayer(i).ID<<" rotateded cardID: "<<cardID<<std::endl;
+
+				_packet.clear();
+				_packetID = ROTATE_CARD;
+				_packet<<_packetID<<playerIndex<<cardID;
+
+				for(int j = 0; j < _clients.size(); j++)
+				{
+					if(j!=i)
+						_clients[j]->send(_packet);
+				}
 				break;
 			case TURN_CARD:
 				_packet>>cardID;
@@ -256,12 +270,23 @@ void Server::receiveTCP()
 						_clients[j]->send(_packet);
 				}
 				break;
-			case DRAW_FROM_DECK:
-				break;
-			case PUT_IN_DECK_TOP:
-				break;
-			case PUT_IN_DECK_BOT:
-				break;
+			case MOVE_SHIT:
+			sf::Int16 playerIndex, tempx, tempy;
+			_packet>>playerIndex>>tempx>>tempy;
+			//std::cout<<"SERVER: "<<i<<". Mouse X: "<<tempx<<" Y: "<<tempy<<std::endl;
+			for(int j = 0; j < _clients.size(); j++)
+			{
+				if(j != playerIndex)
+				{
+					_packet.clear();
+					_packetID = MOVE_SHIT;
+					_packet<<_packetID<<playerIndex<<tempx<<tempy;
+					//if(_sendTimer.getElapsedTime().asMilliseconds()>50)
+						_clients[j]->send(_packet);
+				}
+			}
+			//_sendTimer.restart();
+			break;
 			case SHUFFLE:
 				_packet.clear();
 				_packetID = SHUFFLE;
@@ -299,7 +324,7 @@ void Server::receiveUDP()
 		case EMPTY:
 			break;
 		case MOVE_SHIT:
-			sf::Uint16 playerIndex, tempx, tempy;
+			sf::Int16 playerIndex, tempx, tempy;
 			_packet>>playerIndex>>tempx>>tempy;
 			//std::cout<<"SERVER: "<<i<<". Mouse X: "<<tempx<<" Y: "<<tempy<<std::endl;
 			for(int j = 0; j < _clients.size(); j++)
@@ -324,14 +349,14 @@ void Server::sendStartPacket(int clientIndex)
 
 	_packetID = START;
 
-	sf::Uint16 playerIndex = clientIndex, playerCount = _clients.size();
+	sf::Int16 playerIndex = clientIndex, playerCount = _clients.size();
 
 	_packet<<_packetID<<playerIndex<<playerCount;
 
 	for(int i = 0; i < playerCount;i++)
 	{
 		_packet<<_interface.getPlayer(i).ID;
-		sf::Uint16 r, g, b;
+		sf::Int16 r, g, b;
 		r = _playerColors[i].r;
 		g = _playerColors[i].g;
 		b = _playerColors[i].b;
@@ -347,7 +372,7 @@ void Server::sendUDP(int clientIndex, sf::Packet packet)
 		_UDPsend.send(packet,_interface.getPlayer(clientIndex).IP, _interface.getPlayer(clientIndex).UDPport);
 }
 
-void Server::receiveImageFile(std::string filename, int clientIndex, sf::Uint16 amount,sf::Uint16 x,sf::Uint16 y)
+void Server::receiveImageFile(std::string filename, int clientIndex, sf::Int16 amount,sf::Int16 x,sf::Int16 y)
 {
 	sf::Clock uploadTime;
 	int packetCounter = 0;
@@ -401,9 +426,9 @@ void Server::writeImageFile(std::string filename, std::string data, std::fstream
 {
 	if(*output)
 	{
-		char buffer[1024];
+		char buffer[61440];
 
-		sf::Uint16 dataStringSize = data.size();
+		int dataStringSize = data.size();
 
 		std::cout<<"Data string size: "<<dataStringSize<<std::endl;
 
@@ -427,7 +452,7 @@ void Server::sendImageFile(std::string filename,int index)
 	if(inputFile)
 	{
 		
-		char buffer[1024];
+		char buffer[61440];
 		std::string sendString;
 		bool done = false;
 		int i;
@@ -441,7 +466,7 @@ void Server::sendImageFile(std::string filename,int index)
 
 			i = 0;
 
-			while(i < 1024 && inputFile.peek() != EOF)
+			while(i < 61440 && inputFile.peek() != EOF)
 			{
 				inputFile.read(&buffer[i], 1);
 
@@ -484,7 +509,7 @@ void Server::update()
 		break;
 	case GAME:
 		receiveTCP();
-		receiveUDP();
+		//receiveUDP();
 		break;
 	}
 }
