@@ -1,0 +1,45 @@
+vector<sf::RectangleShape*> ShapeVector;
+int selectedRect;
+
+if (mode == CREATESETSIZEMOUSE)
+	 {
+		if(sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
+		{
+
+			if (mousePressed == 0)
+			{
+			sf::RectangleShape *rect = new sf::RectangleShape;
+
+			//Pistetään kortille satunnainen väri
+			int color1 = myrandom(255);
+			int color2 = myrandom(255);
+			int color3 = myrandom(255);
+			rect->setFillColor(sf::Color(color1,color2,color3));
+
+			//Laitetaan rectanglen alkupiste hiiren kohdalle
+			rect->setPosition(sf::Vector2f(sf::Mouse::getPosition(window)));
+
+			//rectangle vektoriin, jota käytetään sitten kaikkeen kivaan
+			ShapeVector.push_back(rect);
+				
+			//selectedRect ei pakollinen, käytetään seuraavassa elsessä vaan viimeistä indeksiä.
+			selectedRect = ShapeVector.size()-1;
+			
+			//Hiiri on painettu pohjaan, eli seuraavalla päivityskierroksella mennään elseen.
+			mousePressed = 1;
+			}
+
+			else
+			{
+				// muutetaan viimeksi luodun rectanglen kokoa hiiren sijainnin mukaan, jos vasen hiirennappi on pohjassa.
+				ShapeVector[selectedRect]->(sf::Vector2f(sf::Mouse::getPosition(window))-ShapeVector[selectedRect]->getPosition());
+				
+			}
+		}
+		else
+		{
+			// nollataan hiiren pohjaan painaminen, eli seuraavalla pohjaan painamisella luodaan taas uusi rectangle.
+			mousePressed = 0;
+
+		}
+	}
