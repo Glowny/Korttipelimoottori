@@ -168,6 +168,24 @@ void Server::dialoguePhase()
 			totalCards+=tempCardAmount;
 			std::cout<<_interface.getPlayer(playerIndex).ID<<" sends request to upload "<<tempFileName<<"Amount: "<<tempCardAmount<<" X:"<<tempCardSizeX<<" Y:"<<tempCardSizeY<<std::endl;
 
+			if(checkFileExistence(tempFileName))
+			{
+				_packet.clear();
+				_packetID = DECLINE_REQUEST;
+				_packet<<_packetID;
+				_clients[playerIndex]->send(_packet);
+
+				_packet.clear();
+				_packetID = REQUEST_UPLOAD;
+				_packet<<_packetID<<tempFileName<<tempCardAmount<<tempCardSizeX<<tempCardSizeY;
+				for(int i = 0; i < _clients.size(); i++)
+				{
+					if(i != playerIndex)
+						_clients[i]->send(_packet);
+				}
+			}
+			else
+			{
 			_packet.clear();
 			_packetID = ACCEPT_REQUEST;
 			_packet<<_packetID;
@@ -175,6 +193,7 @@ void Server::dialoguePhase()
 			_clients[playerIndex]->setBlocking(true);
 
 			receiveImageFile(tempFileName, playerIndex,tempCardAmount,tempCardSizeX,tempCardSizeY);
+			}
 			//_dWindow->addQuestion(playerIndex ,_interface.getPlayer(playerIndex).ID, ("upload "+filename) );
 			break;
 		case ACCEPT_REQUEST:
@@ -216,12 +235,12 @@ void Server::receiveTCP()
 			case EMPTY:
 				break;
 			case ROTATE_CARD:
-				_packet>>cardID;
+				_packet>>cardID>>x>>y;
 				std::cout<<_interface.getPlayer(i).ID<<" rotateded cardID: "<<cardID<<std::endl;
 
 				_packet.clear();
 				_packetID = ROTATE_CARD;
-				_packet<<_packetID<<playerIndex<<cardID;
+				_packet<<_packetID<<playerIndex<<cardID<<x<<y;
 
 				for(int j = 0; j < _clients.size(); j++)
 				{
@@ -379,7 +398,7 @@ void Server::receiveImageFile(std::string filename, int clientIndex, sf::Int16 a
 
 	std::fstream *outputFile = new std::fstream;
 
-	*outputFile = std::fstream(filename+".png", std::ios::binary|std::ios::out);
+	*outputFile = std::fstream(filename, std::ios::binary|std::ios::out);
 
 	bool done = false;
 	while(!done)
@@ -447,7 +466,7 @@ void Server::writeImageFile(std::string filename, std::string data, std::fstream
 void Server::sendImageFile(std::string filename,int index)
 {
 	int packetCounter = 0;
-	std::fstream inputFile(filename+".png", std::ios::binary|std::ios::in);
+	std::fstream inputFile(filename, std::ios::binary|std::ios::in);
 
 	if(inputFile)
 	{
@@ -495,6 +514,18 @@ void Server::sendImageFile(std::string filename,int index)
 	_packet<<_packetID;
 	_clients[index]->send(_packet);
 	_clients[index]->setBlocking(false);
+}
+
+bool Server::checkFileExistence(std::string filename)
+{
+	std::fstream file(filename);
+	if(file)
+	{
+		file.close();
+		return true;
+	}
+	else
+		return false;
 }
 
 void Server::update()

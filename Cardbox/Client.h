@@ -4,13 +4,15 @@
 #include "Enums.h"
 #include "DialogueView.h"
 #include "CardObject.h"
+#include "AssetLoader.h"
+#include "ToolMenu.h"
 #include <time.h>
 #include <fstream>
 
 class Client
 {
 public:
-	Client(void);
+	Client(AssetLoader &al);
 	~Client(void);
 	void connectionPhase();
 	void handleStartPacket();
@@ -36,10 +38,14 @@ public:
 	void putCardOnTop(int cardID);
 	void checkCardOwnage(int cardID);
 	void rotateCard(int cardID);
+	void toolMenu();
+	void dropCard();
 	
 
 private:
-	std::vector<sf::RectangleShape>boundaries;
+	ToolMenu tools;
+	AssetLoader &assLoad;
+	sf::FloatRect windowRect;
 	sf::Clock clickTimer;
 	bool checkBoundaries(CardObject card);
 	void smootheMouse(int index, sf::Vector2f oldpos,sf::Vector2f newpos);

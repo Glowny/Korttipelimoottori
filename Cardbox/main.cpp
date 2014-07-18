@@ -1,10 +1,13 @@
 #include "Server.h"
 #include "Client.h"
 #include "StartScreen.h"
+#include "AssetLoader.h"
 
 int main()
-{
-	StartScreen startscreen;
+{	
+	AssetLoader assetLoader;
+	StartScreen startscreen(assetLoader);
+
 
 	startscreen.run();
 
@@ -12,7 +15,7 @@ int main()
 	
 	if(option == PLAY)
 	{
-		Client client;
+		Client client(assetLoader);
 		client.connect(startscreen.getIp(),2000,startscreen.getID());
 		client.run();
 	}
@@ -22,7 +25,7 @@ int main()
 		sf::Thread serverThread(&Server::run, &server);
 		serverThread.launch();
 
-		Client client;
+		Client client(assetLoader);
 		client.connect(sf::IpAddress::getLocalAddress(), 2000, startscreen.getID());
 		client.run();
 	}

@@ -22,6 +22,7 @@ public:
 	void sendUDP(int clientIndex, sf::Packet packet);
 	void receiveImageFile(std::string filename, int clientIndex, sf::Int16 amount,sf::Int16 x,sf::Int16 y);
 	void writeImageFile(std::string filename, std::string data,  std::fstream* output);
+	bool checkFileExistence(std::string filename);
 	void update();
 	void run();
 	void sendImageFile(std::string filename, int index);

@@ -1,7 +1,7 @@
 #include "StartScreen.h"
 
 
-StartScreen::StartScreen(void) : _window(sf::RenderWindow(sf::VideoMode(512,256,32),"NextCardGame"))
+StartScreen::StartScreen(AssetLoader &al) :assLoad(al), _window(sf::RenderWindow(sf::VideoMode(512,256,32),"NextCardGame"))
 {	
 	
 	sf::Vector2u size(_window.getSize());
@@ -12,7 +12,7 @@ StartScreen::StartScreen(void) : _window(sf::RenderWindow(sf::VideoMode(512,256,
 	_textInput.setColor(sf::Color::Green);
 	_screenText.setColor(sf::Color::White);
 
-	_font.loadFromFile("comic.ttf");
+	_font = *assLoad.getFont();
 	_textInput.setCharacterSize(24);
 	_screenText.setCharacterSize(32);
 	_blockText.setCharacterSize(40);

@@ -2,7 +2,7 @@
 #include "SFML/Graphics.hpp"
 #include "SFML/Network.hpp"
 #include<string>
-
+#include "AssetLoader.h"
 
 enum OPTION{
 	HOSTPLAY,
@@ -13,7 +13,7 @@ enum OPTION{
 class StartScreen
 {
 public:
-	StartScreen();
+	StartScreen(AssetLoader &al);
 	~StartScreen(void);
 	void run();
 	sf::IpAddress getIp(){sf::IpAddress _ip(_ipString); return _ip;}
@@ -21,6 +21,7 @@ public:
 	int getOption(){return _option;}
 
 private:
+	AssetLoader &assLoad;
 	void askWhatYouWannaDo();
 	void askID();
 	void askIP();
@@ -31,7 +32,6 @@ private:
 	sf::Text _blockText;
 	std::string _id, _ipString;
 	sf::RenderWindow _window;
-	
 	int _option;
 	sf::RectangleShape _LeftBlock;
 	sf::RectangleShape _CenterBlock;
