@@ -1,0 +1,28 @@
+sf::RenderWindow window(...)
+
+// teh‰‰n windowista view tai jotahi
+sf::View view(window.getDefaultView());
+
+//rotate voi s‰‰t‰‰ vaikka playernumberin perusteella.
+view.rotate(90);
+
+//laitetaan windowin viewiksi k‰‰nnetty viewi
+window.setView(view);
+
+sf::vector2f mousePos;
+
+// peliloopissa p‰ivitet‰‰n kierroksen alussa aina hiiren nykyinen sijainti.
+while(1)
+{
+	mousePos = window.mapPixelToCoords(sf::Vector2i(sf::Mouse::getPosition(window)));
+	
+	// kaikkiin miss‰ k‰ytettiin sf::Mouse::getPosition(window), k‰ytet‰‰n mousePos
+	
+	// esimerkiksi
+	
+	for (int i = 0; i < ShapeVector.size(); i++)
+	{	
+		if (ShapeVector[i]->rect.getGlobalBounds().contains(mousePos))
+		ShapeVector[i]->setPosition(mousePos);
+	}
+}
