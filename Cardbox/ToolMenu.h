@@ -8,6 +8,7 @@ class ToolMenu
 public:
 	ToolMenu(AssetLoader &al,sf::Vector2u windowSize);
 	void draw(sf::RenderWindow &window);
+	int checkButtons(sf::Vector2i mousePos);
 	~ToolMenu(void);
 private:
 	sf::Font font;
@@ -16,5 +17,3 @@ private:
 	std::vector<ButtonObject>buttons;
 
 };
-
-

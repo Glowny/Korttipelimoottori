@@ -17,9 +17,7 @@ public:
 	void dialoguePhase();
 	void reset();
 	void receiveTCP();
-	void receiveUDP();
 	void sendStartPacket(int clienIndex);
-	void sendUDP(int clientIndex, sf::Packet packet);
 	void receiveImageFile(std::string filename, int clientIndex, sf::Int16 amount,sf::Int16 x,sf::Int16 y);
 	void writeImageFile(std::string filename, std::string data,  std::fstream* output);
 	bool checkFileExistence(std::string filename);
@@ -34,7 +32,6 @@ private:
 	sf::TcpListener _listener;
 	sf::SocketSelector _selector;
 	std::vector<sf::TcpSocket*> _clients;
-	sf::UdpSocket _UDPreceive, _UDPsend;
 	sf::Packet _packet;
 	sf::Int16 _packetID;
 	sf::Clock _receiveTimer, _sendTimer;

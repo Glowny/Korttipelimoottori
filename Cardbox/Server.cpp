@@ -7,9 +7,6 @@ Server::Server(void)
 	//_dWindow->hide();
 	int totalCards = 0;
 	_port = 2000;
-	_UDPreceive.bind(_port);
-	_UDPreceive.setBlocking(false);
-	_UDPsend.setBlocking(false);
 	_listener.listen(_port);
 	_selector.add(_listener);
 
@@ -43,7 +40,6 @@ void Server::connectionPhase()
 		if(_selector.isReady(_listener))
 		{	
 			std::string id;
-			sf::Int16 clientUDPport;
 
 			sf::TcpSocket* TCPsocket = new sf::TcpSocket;
 			
@@ -52,7 +48,7 @@ void Server::connectionPhase()
 			_packet.clear();
 			if(TCPsocket->receive(_packet) == sf::Socket::Done)
 			{
-				_packet>>id>>clientUDPport;
+				_packet>>id;
 			}
 			
 			TCPsocket->setBlocking(false);
@@ -60,8 +56,8 @@ void Server::connectionPhase()
 			sf::IpAddress ip = TCPsocket->getRemoteAddress();
 
 			std::cout<<id<<" has connected to the session";
-			std::cout<<" with ip: "<<ip.toString()<<" & port: "<<clientUDPport<<std::endl;
-			_interface.addPlayer(id,ip,clientUDPport);
+			std::cout<<" with ip: "<<ip.toString()<<" & port: "<<std::endl;
+			_interface.addPlayer(id,ip);
 			_clients.push_back(TCPsocket);
 			_selector.add(*TCPsocket);
 			
@@ -323,45 +319,6 @@ void Server::receiveTCP()
 	}
 }
 
-void Server::receiveUDP()
-{
-	for(int i = 0; i < _clients.size(); i++)
-	{
-	_packet.clear();
-
-	_packetID = EMPTY;
-
-	if(_UDPreceive.receive(_packet, _clients[i]->getRemoteAddress(), _port) != sf::Socket::Done)
-	{
-	//	std::cout<<"Server UDP didn't receive sheet"<<std::endl;
-	}
-
-	_packet>>_packetID;
-
-		switch(_packetID)
-		{
-		case EMPTY:
-			break;
-		case MOVE_SHIT:
-			sf::Int16 playerIndex, tempx, tempy;
-			_packet>>playerIndex>>tempx>>tempy;
-			//std::cout<<"SERVER: "<<i<<". Mouse X: "<<tempx<<" Y: "<<tempy<<std::endl;
-			for(int j = 0; j < _clients.size(); j++)
-			{
-				if(j != playerIndex)
-				{
-					_packet.clear();
-					_packetID = MOVE_SHIT;
-					_packet<<_packetID<<playerIndex<<tempx<<tempy;
-					sendUDP(j, _packet);
-				}
-			}
-			_sendTimer.restart();
-			break;
-		}
-	}
-}
-
 void Server::sendStartPacket(int clientIndex)
 {
 	_packet.clear();
@@ -383,12 +340,6 @@ void Server::sendStartPacket(int clientIndex)
 	}
 
 	_clients[clientIndex]->send(_packet);
-}
-
-void Server::sendUDP(int clientIndex, sf::Packet packet)
-{
-	if(_sendTimer.getElapsedTime().asMilliseconds()>5)
-		_UDPsend.send(packet,_interface.getPlayer(clientIndex).IP, _interface.getPlayer(clientIndex).UDPport);
 }
 
 void Server::receiveImageFile(std::string filename, int clientIndex, sf::Int16 amount,sf::Int16 x,sf::Int16 y)

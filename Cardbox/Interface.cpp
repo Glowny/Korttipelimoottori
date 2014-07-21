@@ -5,9 +5,9 @@ Interface::Interface(void)
 {
 }
 
-void Interface::addPlayer(std::string id, sf::IpAddress ip, int port)
+void Interface::addPlayer(std::string id, sf::IpAddress ip)
 {
-	_players.push_back(Player(id,ip,port));
+	_players.push_back(Player(id,ip));
 }
 
 

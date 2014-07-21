@@ -12,7 +12,7 @@ public:
 	void draw(sf::RenderWindow &window);
 	void setPosition(sf::Vector2f position);
 	void setSize(sf::Vector2f size);
-	sf::FloatRect getArea();
+	sf::FloatRect getGlobalBounds();
 private:
 	sf::Text _text;
 	sf::RectangleShape _shape;

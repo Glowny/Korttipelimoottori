@@ -21,9 +21,7 @@ public:
 	void run();
 	void connect(sf::IpAddress ip, int port, std::string id);
 	void sendMouse();
-	void sendUDP();
 	void receiveTCP();
-	void receiveUDP();
 	void initPlayers();
 	void checkInput();
 	void sendImageFile(std::string filename);
@@ -40,20 +38,29 @@ public:
 	void rotateCard(int cardID);
 	void toolMenu();
 	void dropCard();
-	
+	void buttonStuff();
+	void makeHandArea(int playerIndex, sf::FloatRect floatRect);
+	bool drawMode;
 
 private:
+	sf::RectangleShape tempRect;
+	std::vector<sf::RectangleShape>handAreas;
+	void checkGameInput(sf::Event Event);
+	void checkDownloadInput(sf::Event Event);
+	void checkConnectionInput(sf::Event Event);
+	bool menuOn;
+	void areaTool(sf::Event Event);
+	bool makingArea;
 	ToolMenu tools;
 	AssetLoader &assLoad;
 	sf::FloatRect windowRect;
 	sf::Clock clickTimer;
-	bool checkBoundaries(CardObject card);
+	bool checkBoundaries(sf::FloatRect floatRect);
 	void smootheMouse(int index, sf::Vector2f oldpos,sf::Vector2f newpos);
 	void moveCard(sf::Int16 playerID, sf::Int16 cardID);
 	std::vector<sf::Vector2f> otherPlayersMousePos;
 	std::vector<sf::Vector2f> otherPlayersMouseDist;
 	sf::TcpSocket TCPsocket;
-	sf::UdpSocket UDPreceive, UDPsend;
 	sf::IpAddress serverIP;
 	std::vector<std::string>playerNames;
 	unsigned short serverPort;
@@ -81,6 +88,5 @@ private:
 	bool cardPicked;
 	std::vector<int> pickers;
 	std::vector<int> pickings;
-	int lastScaled;
 	//DialogueView* dView;
 };

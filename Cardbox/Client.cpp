@@ -4,17 +4,18 @@
 Client::Client(AssetLoader &al) :assLoad(al), window(sf::RenderWindow(sf::VideoMode(760,760), "Cardbox")),tools(ToolMenu(al,sf::Vector2u(760,760)))
 {
 	window.setFramerateLimit(60);
-	UDPreceive.bind(sf::Socket::AnyPort);
 	std::srand(time(NULL));
 	
+	menuOn = false;
 
 	windowRect = sf::FloatRect(-1.f,-1.f,window.getSize().x+2.f, window.getSize().y+2.f);
 
-	lastScaled = -1;
 	currentPhase = CONNECTIONS;
-
+	
 	deltaTime_time = deltaClock.restart();
 	cardPicked = false;
+	drawMode = false;
+	makingArea = false;
 
 	//dView = new DialogueView();
 }
@@ -51,14 +52,11 @@ void Client::connect(sf::IpAddress ip, int port, std::string id)
 	serverIP = ip;
 	serverPort = port;
 	TCPsocket.connect(serverIP,serverPort);
-	sf::Int16 udpReceivePort = UDPreceive.getLocalPort();
-	packet<<id<<udpReceivePort;
+	packet<<id;
 	TCPsocket.send(packet);
 	TCPsocket.setBlocking(false);
-	UDPreceive.setBlocking(false);
-	UDPsend.setBlocking(false);
 
-	std::cout<<"Connected to server; ip: "<<serverIP<<" & port: "<<serverPort<<" Sent UDPport: "<<udpReceivePort<<std::endl;
+	std::cout<<"Connected to server; ip: "<<serverIP<<" & port: "<<serverPort<<std::endl;
 
 	window.setTitle(ownName);
 }
@@ -191,18 +189,13 @@ void Client::dialoguePhase()
 
 void Client::gamePhase()
 {
-	shapes[ownIndex].setPosition(posX, posY);
+	if(!menuOn)
+	{	
+		shapes[ownIndex].setPosition(posX,posY);
+		sendMouse();
+	}
 
-	//sendUDP();
-	//receiveUDP();
-	sendMouse();
 	receiveTCP();
-
-	//if(scaleTimer.getElapsedTime().asSeconds()>6.0)
-	//	{
-	//		scaleCardsNormal();
-	//		scaleTimer.restart();
-	//	}
 
 	for(int i = 0; i < shapes.size(); i++)
 	{
@@ -236,24 +229,6 @@ void Client::sendMouse()
 	packet<<packetID<<ownIndex<<posX<<posY;
 
 	TCPsocket.send(packet);
-
-	_sendTimer.restart();
-
-	}
-}
-
-void Client::sendUDP()
-{
-	if(_sendTimer.getElapsedTime().asMilliseconds()>5)
-	{
-
-	packet.clear();
-
-	packetID = MOVE_SHIT;
-
-	packet<<packetID<<ownIndex<<posX<<posY;
-
-	UDPsend.send(packet,serverIP,serverPort);
 
 	_sendTimer.restart();
 
@@ -370,38 +345,6 @@ void Client::smootheMouse(int index, sf::Vector2f oldpos,sf::Vector2f newpos)
 
 }
 
-void Client::receiveUDP()
-{
-	packet.clear();
-
-	packetID = EMPTY;
-
-	unsigned short tempPort = UDPreceive.getLocalPort();
-	sf::IpAddress tempIP = serverIP;
-	UDPreceive.receive(packet, tempIP, tempPort);
-	
-	packet>>packetID;
-
-	switch(packetID)
-	{
-		case EMPTY:
-			break;
-		case MOVE_SHIT:
-			
-			sf::Int16 playerIndex, tempX, tempY;
-			packet>>playerIndex>>tempX>>tempY;
-
-			//std::cout<<"Received moves: "<<playerNames[playerIndex]<<". X: "<<tempX<<" Y: "<<tempY<<std::endl;
-
-			if(playerIndex > ownIndex)
-				playerIndex--;
-
-			otherPlayersMousePos[playerIndex] = sf::Vector2f(tempX,tempY);
-
-			break;
-	}
-}
-
 void Client::initPlayers()
 {
 		for(int i = 0; i < playerCount; i++)
@@ -416,49 +359,20 @@ void Client::initPlayers()
 		}
 }
 
-void Client::checkInput()
+void Client::checkGameInput(sf::Event Event)
 {
-	sf::Event Event;
-
-
-	while(window.pollEvent(Event))
+	switch(Event.type)
 	{
-		
-		posX = sf::Mouse::getPosition(window).x;
-		posY = sf::Mouse::getPosition(window).y;
-		
-		switch(Event.type)
-		{
-
-
-
-		case sf::Event::MouseWheelMoved:
-			//checkRoll(sf::Mouse::getPosition(window),Event.mouseWheel.delta);
-			zoomzoom(Event.mouseWheel.delta);
-			break;
-
-		case sf::Event::Closed:
-			window.close();
-			break;
 		case sf::Event::KeyPressed:
-			if(Event.key.code == sf::Keyboard::Escape)
-				toolMenu();
-			if(Event.key.code == sf::Keyboard::R && currentPhase == GAME)
+			if(Event.key.code == sf::Keyboard::R)
 			{
 				packet.clear();
 				packetID = SHUFFLE;
 				packet<<packetID;
 				TCPsocket.send(packet);
 			}
-			if(Event.key.code == sf::Keyboard::Space && currentPhase != GAME)
-			{
-				packet.clear();
-				packetID = CONTINUE;
-				packet<<packetID;
-				TCPsocket.send(packet);
-				std::cout<<"Sending continue"<<std::endl;
-			}
-			if(Event.key.code == sf::Keyboard::Space && currentPhase == GAME)
+		
+			if(Event.key.code == sf::Keyboard::Space)
 			{
 				sf::Int16 cardID = checkClick(sf::Mouse::getPosition(window)), distanceX, distanceY;
 
@@ -476,7 +390,90 @@ void Client::checkInput()
 					TCPsocket.send(packet);
 				}
 			}
-			if(Event.key.code == sf::Keyboard::Num1 && currentPhase == DOWNLOADS)
+			break;
+
+		case sf::Event::MouseWheelMoved:
+			if(!menuOn)
+				zoomzoom(Event.mouseWheel.delta);
+			break;
+
+		case sf::Event::MouseButtonPressed:
+
+		if(clickTimer.getElapsedTime().asMilliseconds()>100)
+		{
+				
+		if(sf::Mouse::isButtonPressed(sf::Mouse::Left)  && !cardPicked && !menuOn)
+		{
+			sf::Int16 distanceX,distanceY,cardID = checkClick(sf::Mouse::getPosition(window));
+
+			if(cardID != 1337)
+			{
+			std::cout<<"I picks card";
+			cardPicked = true;
+			checkCardOwnage(cardID);
+			pickers.push_back(ownIndex);
+			pickings.push_back(cardID);
+			distance = sf::Vector2f(posX,posY)-cards[0]._sprite.getPosition();
+			packet.clear();
+			packetID = PICK_UP_CARD;
+
+			std::cout<<"PosX: "<<posX<<" PosY: "<<posY<<" SpriteX: "<<cards[0]._sprite.getPosition().x<<" SpriteY: "<<cards[0]._sprite.getPosition().y<<std::endl;
+			distanceX = distance.x;
+			distanceY = distance.y;
+			std::cout<<" from X: "<<distanceX<<" Y: "<<distanceY<<std::endl;
+			packet<<packetID<<cardID<<distanceX<<distanceY;
+			TCPsocket.send(packet);
+			}
+
+			if(sf::Mouse::isButtonPressed(sf::Mouse::Right) && !menuOn)
+			{
+				sf::Int16 cardID = checkClick(sf::Mouse::getPosition(window));
+
+				if(cardID != 1337)
+				{
+					cards[0].swapTexture();
+				
+					packet.clear();
+					packetID = TURN_CARD;
+					packet<<packetID<<cardID;
+					TCPsocket.send(packet);
+				}
+			}
+			clickTimer.restart();
+				
+			}
+		}
+
+		break;
+
+		case sf::Event::MouseButtonReleased:
+		
+		if(!sf::Mouse::isButtonPressed(sf::Mouse::Left))
+		{
+			dropCard();
+		}
+
+		break;
+		}
+}
+
+
+void Client::checkDownloadInput(sf::Event Event)
+{
+	switch(Event.type)
+	{
+	case sf::Event::KeyPressed:
+
+		if(Event.key.code == sf::Keyboard::Space)
+		{
+			packet.clear();
+			packetID = CONTINUE;
+			packet<<packetID;
+			TCPsocket.send(packet);
+			std::cout<<"Sending continue"<<std::endl;
+		}
+
+		if(Event.key.code == sf::Keyboard::Num1)
 			{
 				std::cout<<"Sending upload request"<<std::endl;
 				fileName = "vesa.png";
@@ -496,7 +493,7 @@ void Client::checkInput()
 				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
 				TCPsocket.send(packet);
 			}
-			if(Event.key.code == sf::Keyboard::Num2 && currentPhase == DOWNLOADS)
+			if(Event.key.code == sf::Keyboard::Num2)
 			{
 				std::cout<<"Sending upload request"<<std::endl;
 				cardAmount = 10;
@@ -516,7 +513,7 @@ void Client::checkInput()
 				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
 				TCPsocket.send(packet);
 			}
-			if(Event.key.code == sf::Keyboard::Num3 && currentPhase == DOWNLOADS)
+			if(Event.key.code == sf::Keyboard::Num3)
 			{
 				std::cout<<"Sending upload request"<<std::endl;
 				cardAmount = 57;
@@ -537,66 +534,155 @@ void Client::checkInput()
 				TCPsocket.send(packet);
 			}
 			break;
-			
-		case sf::Event::MouseButtonPressed:
+	}
+}
 
-			if(clickTimer.getElapsedTime().asMilliseconds()>100)
-			{
-				
-			if(sf::Mouse::isButtonPressed(sf::Mouse::Left)  && !cardPicked)
-			{
-				sf::Int16 distanceX,distanceY,cardID = checkClick(sf::Mouse::getPosition(window));
+void Client::checkConnectionInput(sf::Event Event)
+{
+	switch(Event.type)
+	{
+	case sf::Event::KeyPressed:
+		if(Event.key.code == sf::Keyboard::Space)
+		{
+			packet.clear();
+			packetID = CONTINUE;
+			packet<<packetID;
+			TCPsocket.send(packet);
+			std::cout<<"Sending continue"<<std::endl;
+		}
+		break;
+	}
+}
 
-				if(cardID != 1337)
-				{
-				std::cout<<"I picks card";
-				cardPicked = true;
-				checkCardOwnage(cardID);
-				pickers.push_back(ownIndex);
-				pickings.push_back(cardID);
-				distance = sf::Vector2f(posX,posY)-cards[0]._sprite.getPosition();
-				packet.clear();
-				packetID = PICK_UP_CARD;
+void Client::checkInput()
+{
+	sf::Event Event;
 
-				std::cout<<"PosX: "<<posX<<" PosY: "<<posY<<" SpriteX: "<<cards[0]._sprite.getPosition().x<<" SpriteY: "<<cards[0]._sprite.getPosition().y<<std::endl;
-				distanceX = distance.x;
-				distanceY = distance.y;
-				std::cout<<" from X: "<<distanceX<<" Y: "<<distanceY<<std::endl;
-				packet<<packetID<<cardID<<distanceX<<distanceY;
-				TCPsocket.send(packet);
-				}
-			}
-			if(sf::Mouse::isButtonPressed(sf::Mouse::Right))
-			{
-				sf::Int16 cardID = checkClick(sf::Mouse::getPosition(window));
 
-				if(cardID != 1337)
-				{
-					cards[0].swapTexture();
-				
-					packet.clear();
-					packetID = TURN_CARD;
-					packet<<packetID<<cardID;
-					TCPsocket.send(packet);
-				}
-			}
-			clickTimer.restart();
-				
-			}
-				break;
-
-		case sf::Event::MouseButtonReleased:
+	while(window.pollEvent(Event))
+	{
 		
-			if(!sf::Mouse::isButtonPressed(sf::Mouse::Left))
-			{
-				dropCard();
-			}
+		posX = sf::Mouse::getPosition(window).x;
+		posY = sf::Mouse::getPosition(window).y;
+		
+		switch(currentPhase)
+		{
+
+		case GAME:
+			if(!drawMode)
+				checkGameInput(Event);
+			else
+				areaTool(Event);
+				//joku funktio
 
 			break;
-			}
-			
+		case DOWNLOADS:
+			checkDownloadInput(Event);
+			break;
+		case CONNECTIONS:
+			checkConnectionInput(Event);
+			break;
 		}
+
+		switch(Event.type)
+		{
+
+		case sf::Event::Closed:
+			window.close();
+			std::exit(0);
+			break;
+		case sf::Event::KeyPressed:
+			if(Event.key.code == sf::Keyboard::Escape)
+				toolMenu();
+			break;
+		case sf::Event::MouseButtonPressed:
+			if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && menuOn)
+			{
+				buttonStuff();
+			}
+			break;
+		}
+	}
+}
+
+void Client::buttonStuff()
+{
+	sf::Vector2i mouse = sf::Mouse::getPosition(window);
+	mouse.x+=window.getSize().x*0.333f;
+	int pushTheButton = tools.checkButtons(mouse);
+
+	switch(pushTheButton)
+	{
+	case -1:
+		break;
+	case 0:
+		if(currentPhase == GAME)
+		{
+			drawMode = !drawMode;
+			toolMenu();
+		}
+		break;
+	case 1:
+		window.close();
+		std::exit(0);
+		break;
+	}
+}
+
+void Client::areaTool(sf::Event Event)
+{	
 	
+	switch(Event.type)
+	{
+
+	case sf::Event::MouseButtonPressed:
+		
+		if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && !makingArea)
+		{
+			makingArea = true;
+			tempRect.setPosition(sf::Vector2f(sf::Mouse::getPosition(window)));
+
+		}
+		
+	break;
+
+	case sf::Event::MouseButtonReleased:
+
+		if(!sf::Mouse::isButtonPressed(sf::Mouse::Left) && makingArea)
+		{
+			makingArea = false;
+			makeHandArea(ownIndex,tempRect.getGlobalBounds());
+			tempRect.setSize(sf::Vector2f(0,0));
+		}
+
+		break;
+	}
+
+	if(makingArea)
+		{
+			tempRect.setSize(sf::Vector2f(sf::Mouse::getPosition(window))-tempRect.getPosition());
+			std::cout<<"Size X: "<<tempRect.getSize().x<<"Size Y: "<<tempRect.getSize().y<<std::endl;
+		}
+}
+
+void Client::makeHandArea(int playerIndex, sf::FloatRect floatRect)
+{
+	sf::RectangleShape rect;
+	rect.setPosition(floatRect.left,floatRect.top);
+	rect.setSize(sf::Vector2f(floatRect.width,floatRect.height));
+	rect.setFillColor(sf::Color::Transparent);
+	rect.setOutlineColor(playerColors[playerIndex]);
+	rect.setOutlineThickness(2.0f);
+
+	for(int i = 0; i < handAreas.size();i++)
+	{
+		if(handAreas[i].getOutlineColor()==playerColors[playerIndex])
+			{
+				handAreas.erase(handAreas.begin()+i);
+				break;
+			}
+	}
+	handAreas.push_back(rect);
 }
 
 void Client::zoomzoom(int delta)
@@ -807,20 +893,20 @@ void Client::moveCard(sf::Int16 playerID,sf::Int16 cardID)
 				tempCard._sprite.setPosition(sf::Vector2f(sf::Mouse::getPosition(window))-distance);
 			}
 		
-			if(checkBoundaries(tempCard))
+			if(checkBoundaries(tempCard._sprite.getGlobalBounds()))
 				cards[i]._sprite.setPosition(tempCard._sprite.getPosition());
 		}
 	}
 
 }
 
-bool Client::checkBoundaries(CardObject card)
+bool Client::checkBoundaries(sf::FloatRect floatRect)
 {
 	std::vector<sf::Vector2f> corners;
-	corners.push_back(sf::Vector2f(card._sprite.getGlobalBounds().left, card._sprite.getGlobalBounds().top));
-	corners.push_back(sf::Vector2f(card._sprite.getGlobalBounds().left+card._sprite.getGlobalBounds().width, card._sprite.getGlobalBounds().top));
-	corners.push_back(sf::Vector2f(card._sprite.getGlobalBounds().left, card._sprite.getGlobalBounds().top+card._sprite.getGlobalBounds().height));
-	corners.push_back(sf::Vector2f(card._sprite.getGlobalBounds().left+card._sprite.getGlobalBounds().width, card._sprite.getGlobalBounds().top+card._sprite.getGlobalBounds().height));
+	corners.push_back(sf::Vector2f(floatRect.left,floatRect.top));
+	corners.push_back(sf::Vector2f(floatRect.left+floatRect.width, floatRect.top));
+	corners.push_back(sf::Vector2f(floatRect.left, floatRect.top+floatRect.height));
+	corners.push_back(sf::Vector2f(floatRect.left+floatRect.width, floatRect.top+floatRect.height));
 	
 	for(int i = 0; i < corners.size();i++)
 	{
@@ -1072,15 +1158,21 @@ void Client::toolMenu()
 		view.move(window.getSize().x*0.333f,0);
 		window.setView(view);
 		window.setMouseCursorVisible(true);
-		shapes[ownIndex].setFillColor(sf::Color::Transparent);
+		if(shapes.size()>0)
+			shapes[ownIndex].setFillColor(sf::Color::Transparent);
 		dropCard();
-	
+		menuOn = true;
 	}
 	else
 	{	
-		shapes[ownIndex].setFillColor(playerColors[ownIndex]);
+		if(shapes.size()>0)
+		{
+			shapes[ownIndex].setFillColor(playerColors[ownIndex]);
+			sf::Mouse::setPosition(sf::Vector2i(shapes[ownIndex].getPosition()), window);
+		}
 		window.setView(window.getDefaultView());
 		window.setMouseCursorVisible(false);
+		menuOn = false;
 	}
 
 }
@@ -1089,6 +1181,11 @@ void Client::draw()
 {
 	window.clear(sf::Color(50,135,50,255));
 
+	for(int i = 0; i < handAreas.size();i++)
+	{
+		window.draw(handAreas[i]);
+		//std::cout<<handAreas.size()<<std::endl;
+	}
 
 	for(int i = cards.size()-1; i >= 0;i--)
 	{
@@ -1100,6 +1197,9 @@ void Client::draw()
 	}
 	
 	tools.draw(window);
+	
+	if(makingArea)
+		window.draw(tempRect);
 
 	window.display();
 }

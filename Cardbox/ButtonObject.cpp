@@ -66,7 +66,7 @@ void ButtonObject::setSize(sf::Vector2f size)
 	_shape.setOutlineColor(sf::Color::Black);
 }
 
-sf::FloatRect ButtonObject::getArea()
+sf::FloatRect ButtonObject::getGlobalBounds()
 {
 	if(_sprite.getTexture() != NULL)
 		return _sprite.getGlobalBounds();

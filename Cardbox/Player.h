@@ -4,11 +4,10 @@
 class Player
 {
 public:
-	Player(std::string id, sf::IpAddress ip, unsigned short udpport);
+	Player(std::string id, sf::IpAddress ip);
 	~Player(void);
 	
 	std::string ID;
 	sf::IpAddress IP;
-	unsigned short UDPport;
 };
 
