@@ -213,6 +213,7 @@ void Client::gamePhase()
 		for(int i = 0; i < pickers.size();i++)
 		{
 			moveCard(pickers[i],pickings[i]);
+			checkHandAreas(pickings[i]);
 		}
 	}
 }
@@ -247,20 +248,32 @@ void Client::receiveTCP()
 
 	sf::Int16 playerID,cardID,x,y;
 
+	sf::FloatRect tempFR;
+
 	switch(packetID)
 	{
 	case MOVE_SHIT:
 			
-		sf::Int16 playerIndex, tempX, tempY;
-		packet>>playerIndex>>tempX>>tempY;
+		sf::Int16 tempX, tempY;
+		packet>>playerID>>tempX>>tempY;
 
 		//std::cout<<"Received moves: "<<playerNames[playerIndex]<<". X: "<<tempX<<" Y: "<<tempY<<std::endl;
 
-		if(playerIndex > ownIndex)
-			playerIndex--;
+		if(playerID > ownIndex)
+			playerID--;
 
-		otherPlayersMousePos[playerIndex] = sf::Vector2f(tempX,tempY);
+		otherPlayersMousePos[playerID] = sf::Vector2f(tempX,tempY);
 
+		break;
+	case AREA:
+		float aX,aY,w,h;
+		packet>>playerID>>aX>>aY>>w>>h;
+
+		std::cout<<"AREA: x: "<<aX<<" y: "<<aY<<" W: "<<w<<" H: "<<h;
+		std::cout<<" from "<<playerNames[playerID]<<std::endl;
+
+		tempFR = sf::FloatRect(aX,aY,w,h);
+		makeHandArea(playerID,tempFR);
 		break;
 	case SHUFFLE:
 		//FUNKTIO TÄLLE PLZ, eri dekeille vois omat ja kaikkeee
@@ -424,6 +437,7 @@ void Client::checkGameInput(sf::Event Event)
 			packet<<packetID<<cardID<<distanceX<<distanceY;
 			TCPsocket.send(packet);
 			}
+		}
 
 			if(sf::Mouse::isButtonPressed(sf::Mouse::Right) && !menuOn)
 			{
@@ -431,18 +445,21 @@ void Client::checkGameInput(sf::Event Event)
 
 				if(cardID != 1337)
 				{
-					cards[0].swapTexture();
+					if(!cards[0].getHanded())
+					{
+						cards[0].swapTexture();
 				
-					packet.clear();
-					packetID = TURN_CARD;
-					packet<<packetID<<cardID;
-					TCPsocket.send(packet);
+						packet.clear();
+						packetID = TURN_CARD;
+						packet<<packetID<<cardID;
+						TCPsocket.send(packet);
+					}
 				}
 			}
 			clickTimer.restart();
 				
 			}
-		}
+		
 
 		break;
 
@@ -456,7 +473,6 @@ void Client::checkGameInput(sf::Event Event)
 		break;
 		}
 }
-
 
 void Client::checkDownloadInput(sf::Event Event)
 {
@@ -639,9 +655,9 @@ void Client::areaTool(sf::Event Event)
 		
 		if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && !makingArea)
 		{
+			std::cout<<tempRect.getPosition().x<<" "<<tempRect.getPosition().y<<std::endl;
 			makingArea = true;
 			tempRect.setPosition(sf::Vector2f(sf::Mouse::getPosition(window)));
-
 		}
 		
 	break;
@@ -652,16 +668,36 @@ void Client::areaTool(sf::Event Event)
 		{
 			makingArea = false;
 			makeHandArea(ownIndex,tempRect.getGlobalBounds());
-			tempRect.setSize(sf::Vector2f(0,0));
-		}
 
+			packet.clear();
+			packetID = AREA;
+			float x = tempRect.getGlobalBounds().left;
+			float y = tempRect.getGlobalBounds().top;
+			float w = tempRect.getGlobalBounds().width;
+			float h = tempRect.getGlobalBounds().height;
+			packet<<packetID<<x<<y<<w<<h;
+			TCPsocket.send(packet);
+
+			tempRect.setSize(sf::Vector2f(0,0));
+			drawMode = false;
+		}
+		
 		break;
 	}
 
 	if(makingArea)
 		{
+			
 			tempRect.setSize(sf::Vector2f(sf::Mouse::getPosition(window))-tempRect.getPosition());
 			std::cout<<"Size X: "<<tempRect.getSize().x<<"Size Y: "<<tempRect.getSize().y<<std::endl;
+			if(tempRect.getSize().x>300)
+				tempRect.setSize(sf::Vector2f(300,tempRect.getSize().y));
+			if(tempRect.getSize().y>200)
+				tempRect.setSize(sf::Vector2f(tempRect.getSize().x,200));
+			if(tempRect.getSize().x<-300)
+				tempRect.setSize(sf::Vector2f(-300,tempRect.getSize().y));
+			if(tempRect.getSize().y<-200)
+				tempRect.setSize(sf::Vector2f(tempRect.getSize().x,-200));
 		}
 }
 
@@ -683,6 +719,51 @@ void Client::makeHandArea(int playerIndex, sf::FloatRect floatRect)
 			}
 	}
 	handAreas.push_back(rect);
+}
+
+void Client::checkHandAreas(int cardID)
+{
+	for(int i = 0; i < cards.size(); i++)
+	{
+		if(cardID == cards[i].getID())
+		{
+			sf::FloatRect floatRect = cards[i]._sprite.getGlobalBounds();
+
+			std::vector<sf::Vector2f> corners;
+			corners.push_back(sf::Vector2f(floatRect.left,floatRect.top));
+			corners.push_back(sf::Vector2f(floatRect.left+floatRect.width, floatRect.top));
+			corners.push_back(sf::Vector2f(floatRect.left, floatRect.top+floatRect.height));
+			corners.push_back(sf::Vector2f(floatRect.left+floatRect.width, floatRect.top+floatRect.height));
+
+			bool inArea;
+
+			for(int j = 0; j < handAreas.size(); j++)
+			{
+				inArea = true;
+				for(int k = 0; k < corners.size(); k++)
+				{
+					if(!handAreas[j].getGlobalBounds().contains(corners[i]))
+					{
+						inArea = false;
+						break;
+					}
+				}
+				if(inArea)
+				{
+					if(handAreas[j].getOutlineColor() == playerColors[ownIndex])
+						cards[i].inHand(true);
+					else
+						cards[i].inHand(false);
+
+					break;
+				}
+				else
+					cards[i].remember();
+			}
+
+			break;
+		}
+	}
 }
 
 void Client::zoomzoom(int delta)
@@ -865,6 +946,7 @@ void Client::dropCard()
 	sf::Int16 x,y;
 	x = cards[0]._sprite.getPosition().x;
 	y = cards[0]._sprite.getPosition().y;
+	
 	packet<<packetID<<x<<y;
 	TCPsocket.send(packet);
 
@@ -895,6 +977,8 @@ void Client::moveCard(sf::Int16 playerID,sf::Int16 cardID)
 		
 			if(checkBoundaries(tempCard._sprite.getGlobalBounds()))
 				cards[i]._sprite.setPosition(tempCard._sprite.getPosition());
+
+			break;
 		}
 	}
 

@@ -39,6 +39,7 @@ public:
 	void toolMenu();
 	void dropCard();
 	void buttonStuff();
+	void checkHandAreas(int cardID);
 	void makeHandArea(int playerIndex, sf::FloatRect floatRect);
 	bool drawMode;
 

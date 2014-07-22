@@ -286,7 +286,7 @@ void Server::receiveTCP()
 				}
 				break;
 			case MOVE_SHIT:
-			sf::Int16 playerIndex, tempx, tempy;
+			sf::Int16 tempx, tempy;
 			_packet>>playerIndex>>tempx>>tempy;
 			//std::cout<<"SERVER: "<<i<<". Mouse X: "<<tempx<<" Y: "<<tempy<<std::endl;
 			for(int j = 0; j < _clients.size(); j++)
@@ -311,6 +311,23 @@ void Server::receiveTCP()
 				for(int j = 0; j < _clients.size(); j++)
 				{
 					_clients[j]->send(_packet);
+				}
+				break;
+			case AREA:
+				float aX,aY,w,h;
+				_packet>>aX>>aY>>w>>h;
+
+				std::cout<<"AREA: x: "<<aX<<" y: "<<aY<<" W: "<<w<<" H: "<<h;
+				std::cout<<" from "<<_interface.getPlayer(i).ID<<std::endl;
+
+				_packet.clear();
+				_packetID = AREA;
+				_packet<<_packetID<<playerIndex<<aX<<aY<<w<<h;
+
+				for(int j = 0; j < _clients.size(); j++)
+				{
+					if(j != playerIndex)
+						_clients[j]->send(_packet);
 				}
 				break;
 			case MESSAGE:
