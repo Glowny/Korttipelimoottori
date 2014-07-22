@@ -17,17 +17,22 @@ AssetLoader::~AssetLoader(void)
 
 void AssetLoader::readAssetList()
 {
-	std::ifstream ipFile("AssetList.txt");
+	std::fstream ipFile("DeckList.dat",std::ios::binary|std::ios::in);
 	std::string texture;
 	if(ipFile)
 	{
-		while(std::getline(ipFile,texture))
+		while(ipFile.peek() != EOF)
 		{
+			Deck tempDeck;
+			tempDeck.readFromFile(ipFile);
+
+			deckVector.push_back(tempDeck);
+
 			sf::Texture *temp = new sf::Texture;
 			std::map<std::string,sf::Texture*>::iterator it;
 			it = textureMap.begin();
-			temp->loadFromFile(texture);
-			textureMap.insert(it,make_pair(texture,temp));
+			temp->loadFromFile(tempDeck.getName());
+			textureMap.insert(it,make_pair(tempDeck.getName(),temp));	
 		}
 
 		ipFile.close();
@@ -37,19 +42,16 @@ void AssetLoader::readAssetList()
 
 void AssetLoader::writeAssetList()
 {
-	std::ofstream opFile("AssetList.txt",std::ios::trunc);
+	std::fstream opFile("DeckList.dat",std::ios::trunc|std::ios::binary|std::ios::out);
 
 	if(opFile)
 	{
 
-		std::map<std::string,sf::Texture*>::iterator it;
-		it = textureMap.begin();
-		
-		while(it != textureMap.end())
+		for(int i = 0; i < deckVector.size();i++)
 		{
-			opFile << it->first <<"\n";
-			it++;
+			deckVector[i].writeToFile(opFile);
 		}
+
 		opFile.close();
 	}
 }
@@ -71,7 +73,7 @@ sf::Texture* AssetLoader::getTexture(std::string s)
 		return NULL;
 }
 
-void AssetLoader::newImage(std::string s)
+void AssetLoader::newDeck(std::string s,int amount,int sizex,int sizey)
 {
 	sf::Texture *temp = new sf::Texture;
 	temp->loadFromFile(s);
@@ -79,6 +81,7 @@ void AssetLoader::newImage(std::string s)
 	std::map<std::string,sf::Texture*>::iterator it;
 	it = textureMap.begin();
 	textureMap.insert(it,std::make_pair(s,temp));
+	deckVector.push_back(Deck(s,amount,sizex,sizey));
 
 	writeAssetList();
 }

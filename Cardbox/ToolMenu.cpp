@@ -7,11 +7,16 @@ ToolMenu::ToolMenu(AssetLoader &al,sf::Vector2u windowSize):assLoad(al)
 	area = sf::RectangleShape(sf::Vector2f(windowSize.x*0.33f,windowSize.y));
 	area.setPosition(windowSize.x,0);
 	buttons.push_back(ButtonObject(font,"Make Area"));
+	buttons.push_back(ButtonObject(font,"Deckings"));
 	buttons.push_back(ButtonObject(font,"Exit"));
-	buttons[0].setSize(sf::Vector2f(area.getSize().x, area.getSize().y*0.1));
-	buttons[0].setPosition(sf::Vector2f(area.getGlobalBounds().left,0));
-	buttons[1].setSize(sf::Vector2f(area.getSize().x, area.getSize().y*0.1));
-	buttons[1].setPosition(sf::Vector2f(area.getGlobalBounds().left,area.getSize().y*0.1));
+	
+	for(int i = 0; i <buttons.size();i++)
+	{
+		buttons[i].setSize(sf::Vector2f(area.getSize().x, area.getSize().y*0.1));
+		buttons[i].setPosition(sf::Vector2f(area.getGlobalBounds().left,i*area.getSize().y*0.1));
+	}
+
+
 }
 
 void ToolMenu::draw(sf::RenderWindow &window)

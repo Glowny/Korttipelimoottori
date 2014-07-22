@@ -10,10 +10,9 @@ public:
 	void draw(sf::RenderWindow &window);
 	int checkButtons(sf::Vector2i mousePos);
 	~ToolMenu(void);
-private:
+protected:
 	sf::Font font;
 	AssetLoader &assLoad;
 	sf::RectangleShape area;
 	std::vector<ButtonObject>buttons;
-
 };

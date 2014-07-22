@@ -116,36 +116,19 @@ void Client::dialoguePhase()
 
 	packet>>packetID;
 
-	/*std::string filename;
-	int state = -1;*/
 
 	switch(packetID)
 	{
 	case EMPTY:
-
-		/*state = dView->checkQuestion(-1, sf::Vector2i(posX,posY));
-		switch(state)
-		{
-		case -1:
-			break;
-		case 0:
-			packet.clear();
-			packetID = DECLINE_REQUEST;
-			TCPsocket.send(packet);
-			break;
-		case 1:
-			packet.clear();
-			packetID = ACCEPT_REQUEST;
-			TCPsocket.send(packet);
-			break;
-		}*/
-
 		break;
 	case CONTINUE:
 
 		currentPhase = GAME;
 		std::cout<<"Client going to gamePhase"<<std::endl;
 		window.setMouseCursorVisible(false);
+		
+		arrangeDecks();
+
 		//delete dView;
 		break;
 	case REQUEST_UPLOAD:
@@ -286,10 +269,13 @@ void Client::receiveTCP()
 		pickings.clear();
 		for(int i = 0; i < cards.size(); i++)
 		{
-			cards[i]._sprite.setPosition(0,0);
+			if(!cards[i].getHanded())
+			{
 			cards[i]._sprite.setRotation(0);
 			cards[i].backSideUp();
+			}
 		}
+		arrangeDecks();
 		break;
 	case PICK_UP_CARD:
 		//saaattaa räjähtää mutta ei kuitenkaan räjähä
@@ -499,7 +485,7 @@ void Client::checkDownloadInput(sf::Event Event)
 
 				if(!assLoad.check(fileName))
 				{
-					assLoad.newImage(fileName);
+					assLoad.newDeck(fileName,cardAmount,cardSizeX,cardSizeY);
 					std::cout<<"Added new image to ass"<<std::endl;
 				}
 				makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
@@ -509,46 +495,7 @@ void Client::checkDownloadInput(sf::Event Event)
 				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
 				TCPsocket.send(packet);
 			}
-			if(Event.key.code == sf::Keyboard::Num2)
-			{
-				std::cout<<"Sending upload request"<<std::endl;
-				cardAmount = 10;
-				cardSizeX = 170;
-				cardSizeY = 340;
-				fileName = "karjalainen.png";
 
-				if(!assLoad.check(fileName))
-				{
-					assLoad.newImage(fileName);
-					std::cout<<"Added new image to ass"<<std::endl;
-				}
-				makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
-
-				packet.clear();
-				packetID = REQUEST_UPLOAD;
-				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
-				TCPsocket.send(packet);
-			}
-			if(Event.key.code == sf::Keyboard::Num3)
-			{
-				std::cout<<"Sending upload request"<<std::endl;
-				cardAmount = 57;
-				cardSizeX = 256;
-				cardSizeY = 256;
-				fileName = "Jigsaw.png";
-
-				if(!assLoad.check(fileName))
-				{
-					assLoad.newImage(fileName);
-					std::cout<<"Added new image to ass"<<std::endl;
-				}
-				makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
-
-				packet.clear();
-				packetID = REQUEST_UPLOAD;
-				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
-				TCPsocket.send(packet);
-			}
 			break;
 	}
 }
@@ -638,7 +585,11 @@ void Client::buttonStuff()
 			toolMenu();
 		}
 		break;
+
 	case 1:
+
+		break;
+	case 2:
 		window.close();
 		std::exit(0);
 		break;
@@ -718,6 +669,18 @@ void Client::makeHandArea(int playerIndex, sf::FloatRect floatRect)
 			}
 	}
 	handAreas.push_back(rect);
+}
+
+void Client::arrangeDecks()
+{
+	for(int i = 0; i < decks.size();i++)
+	{
+		decks[i].setPosition(sf::Vector2f(i*200,0));
+		if(i>3)
+			decks[i].setPosition(sf::Vector2f(i-3*200,400));
+		else if(i>6)
+			std::cout<<"vittu"<<std::endl;
+	}
 }
 
 void Client::checkHandAreas(int cardID)
@@ -880,48 +843,6 @@ sf::Int16 Client::checkClick(sf::Vector2i mousepos)
 	sf::Int16 nothing = 1337;
 	return nothing;
 	
-}
-
-void Client::checkRoll(sf::Vector2i mousepos,int delta)
-{
-	sf::Vector2f mouse(mousepos);
-	bool scaled = true;
-
-	for(int i = 0; i < cards.size();i++)
-	{
-		if(cards[i]._sprite.getGlobalBounds().contains(mouse))
-		{
-
-			if(delta<0)
-			{
-				if(cards[i]._sprite.getScale() == sf::Vector2f(0.3f,0.3f))
-					cards[i]._sprite.setScale(0.4f,0.4f);
-				else if(cards[i]._sprite.getScale() == sf::Vector2f(0.4f,0.4f))
-					cards[i]._sprite.setScale(0.5f,0.5f);
-				else
-					scaled = false;
-			}
-
-			if(delta>0)
-				{
-
-					if(cards[i]._sprite.getScale() == sf::Vector2f(0.4f,0.4f))
-						cards[i]._sprite.setScale(0.3f,0.3f);
-					else if(cards[i]._sprite.getScale() == sf::Vector2f(0.5f,0.5f))
-						cards[i]._sprite.setScale(0.4f,0.4f);
-					else
-						scaled = false;
-				}
-
-			if(scaled)
-				putCardOnTop(cards[i].getID());
-
-
-			break;
-		}	
-		
-	}
-
 }
 
 void Client::dropCard()
@@ -1090,7 +1011,7 @@ void Client::receiveImageFile(std::string filename,sf::Int16 amount,sf::Int16 x,
 			TCPsocket.setBlocking(false);
 			if(!assLoad.check(filename))
 			{
-				assLoad.newImage(filename);
+				assLoad.newDeck(filename,cardAmount,cardSizeX,cardSizeY);
 				std::cout<<"Added new image to ass"<<std::endl;
 			}
 			makeDeck(filename,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
@@ -1150,7 +1071,6 @@ void Client::makeDeck(std::string filename, int cardAmount,sf::Vector2f cardSize
 				brake = true;
 				break;
 			}
-			//cardObjects[cardObjects.size()-1]._sprite.setPosition((sf::Vector2f(x*cardSizeX,cardSizeY*y)));
 
 		}
 	if(brake)
@@ -1169,6 +1089,8 @@ void Client::makeDeck(std::string filename, int cardAmount,sf::Vector2f cardSize
 		cards[i].swapTexture();
 		cards[i]._sprite.setScale(0.3f,0.3f);
 	}
+
+	decks.push_back(DeckObject(cards,size));
 	}
 	else
 		std::cout<<"Texture is so fucking NULL"<<std::endl;
