@@ -687,7 +687,6 @@ void Client::areaTool(sf::Event Event)
 
 	if(makingArea)
 		{
-			
 			tempRect.setSize(sf::Vector2f(sf::Mouse::getPosition(window))-tempRect.getPosition());
 			std::cout<<"Size X: "<<tempRect.getSize().x<<"Size Y: "<<tempRect.getSize().y<<std::endl;
 			if(tempRect.getSize().x>300)
@@ -742,7 +741,7 @@ void Client::checkHandAreas(int cardID)
 				inArea = true;
 				for(int k = 0; k < corners.size(); k++)
 				{
-					if(!handAreas[j].getGlobalBounds().contains(corners[i]))
+					if(!handAreas[j].getGlobalBounds().contains(corners[k]))
 					{
 						inArea = false;
 						break;
@@ -1232,6 +1231,7 @@ void Client::rotateCard(int cardID)
 			break;
 		}
 	}
+	checkHandAreas(cardID);
 }
 
 void Client::toolMenu()
