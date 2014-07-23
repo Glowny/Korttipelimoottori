@@ -13,7 +13,7 @@ public:
 	sf::Texture* getTexture(std::string s);
 	void newDeck(std::string s,int amount,int sizex,int sizey);
 	bool check(std::string s);
-	std::vector<Deck> getDecks();
+	std::vector<Deck> getDecks(){return deckVector;};
 private:
 	std::map<std::string,sf::Texture*>textureMap;
 	std::vector<Deck>deckVector;

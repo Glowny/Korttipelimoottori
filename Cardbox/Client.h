@@ -1,11 +1,13 @@
 #pragma once
 #include <SFML\Network.hpp>
 #include <SFML\Graphics.hpp>
+#include "DeckMaker.h"
 #include "Enums.h"
 #include "DialogueView.h"
 #include "CardObject.h"
 #include "AssetLoader.h"
 #include "ToolMenu.h"
+#include "DeckMenu.h"
 #include <time.h>
 #include <fstream>
 #include "DeckObject.h"
@@ -14,7 +16,7 @@ class Client
 {
 public:
 
-	Client(AssetLoader &al);
+	Client(AssetLoader *al);
 	~Client(void);
 	void run();
 	void connect(sf::IpAddress ip, int port, std::string id);
@@ -23,7 +25,7 @@ private:
 
 	void connectionPhase();
 	void handleStartPacket();
-	void dialoguePhase();
+	void downloadPhase();
 	void gamePhase();
 	void sendMouse();
 	void receiveTCP();
@@ -42,7 +44,8 @@ private:
 	void rotateCard(int cardID);
 	void toolMenu();
 	void dropCard();
-	void buttonStuff();
+	void checkToolMenu();
+	void checkDeckMenu();
 	void checkHandAreas(int cardID);
 	void makeHandArea(int playerIndex, sf::FloatRect floatRect);
 	bool checkBoundaries(sf::FloatRect floatRect);
@@ -53,13 +56,15 @@ private:
 	void checkConnectionInput(sf::Event Event);
 	void areaTool(sf::Event Event);
 	void arrangeDecks();
+	void deckmaker();
 
 	//ominaisuudet : DDd
 
 	ToolMenu tools;
-	AssetLoader &assLoad;
+	AssetLoader *assLoad;
 	PHASE currentPhase;
-	
+	DeckMenu deckMenu;
+	DeckMaker deckMaker;
 	
 	sf::RectangleShape tempRect;
 	sf::TcpSocket TCPsocket;
@@ -74,7 +79,7 @@ private:
 	sf::FloatRect windowRect;
 	sf::Clock clickTimer;
 
-	bool menuOn,makingArea,cardPicked,drawMode;
+	bool toolMenuOn,makingArea,cardPicked,drawMode,deckMenuOn;
 	unsigned short serverPort;
 	float deltaTime;
 

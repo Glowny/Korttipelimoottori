@@ -5,8 +5,8 @@
 
 int main()
 {	
-	AssetLoader assetLoader;
-	StartScreen startscreen(assetLoader);
+	AssetLoader *assetLoader = new AssetLoader;
+	StartScreen startscreen(*assetLoader);
 
 
 	startscreen.run();

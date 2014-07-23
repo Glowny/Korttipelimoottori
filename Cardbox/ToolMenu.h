@@ -7,12 +7,13 @@ class ToolMenu
 {
 public:
 	ToolMenu(AssetLoader &al,sf::Vector2u windowSize);
-	void draw(sf::RenderWindow &window);
-	int checkButtons(sf::Vector2i mousePos);
-	~ToolMenu(void);
+	virtual void draw(sf::RenderWindow &window);
+	virtual int checkButtons(sf::Vector2i mousePos);
+	virtual ~ToolMenu(void);
 protected:
 	sf::Font font;
 	AssetLoader &assLoad;
 	sf::RectangleShape area;
 	std::vector<ButtonObject>buttons;
+	void arrange(std::vector<ButtonObject>&butts, int placement);
 };

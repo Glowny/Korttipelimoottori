@@ -1,12 +1,12 @@
 #include "Client.h"
 #include <iostream>
 
-Client::Client(AssetLoader &al) :assLoad(al), window(sf::RenderWindow(sf::VideoMode(760,760), "Cardbox")),tools(ToolMenu(al,sf::Vector2u(760,760)))
+Client::Client(AssetLoader *al) :assLoad(al), window(sf::RenderWindow(sf::VideoMode(760,760), "Cardbox")),tools(ToolMenu(*al,sf::Vector2u(760,760))),deckMenu(DeckMenu(*al,sf::Vector2u(760,760))),deckMaker(*assLoad)
 {
 	window.setFramerateLimit(60);
 	std::srand(time(NULL));
 	
-	menuOn = false;
+	toolMenuOn = false;
 
 	windowRect = sf::FloatRect(-1.f,-1.f,window.getSize().x+2.f, window.getSize().y+2.f);
 
@@ -16,6 +16,7 @@ Client::Client(AssetLoader &al) :assLoad(al), window(sf::RenderWindow(sf::VideoM
 	cardPicked = false;
 	drawMode = false;
 	makingArea = false;
+	deckMenuOn = false;
 
 	//dView = new DialogueView();
 }
@@ -35,7 +36,7 @@ void Client::run()
 			connectionPhase();
 			break;
 		case DOWNLOADS:
-			dialoguePhase();
+			downloadPhase();
 			break;
 		case GAME:
 			gamePhase();
@@ -104,7 +105,7 @@ void Client::handleStartPacket()
 	initPlayers();
 }
 
-void Client::dialoguePhase()
+void Client::downloadPhase()
 {
 	//dView->draw(window);
 
@@ -135,7 +136,7 @@ void Client::dialoguePhase()
 		packet>>fileName>>cardAmount>>cardSizeX>>cardSizeY;
 		std::cout<<"Server sends request to upload "<<fileName<<"Amount: "<<cardAmount<<" X:"<<cardSizeX<<" Y:"<<cardSizeY<<std::endl;
 		
-		if(assLoad.check(fileName))
+		if(assLoad->check(fileName))
 		{
 		packet.clear();
 		packetID = DECLINE_REQUEST;
@@ -172,7 +173,7 @@ void Client::dialoguePhase()
 
 void Client::gamePhase()
 {
-	if(!menuOn)
+	if(!toolMenuOn)
 	{	
 		shapes[ownIndex].setPosition(posX,posY);
 		sendMouse();
@@ -392,7 +393,7 @@ void Client::checkGameInput(sf::Event Event)
 			break;
 
 		case sf::Event::MouseWheelMoved:
-			if(!menuOn)
+			if(!toolMenuOn)
 				zoomzoom(Event.mouseWheel.delta);
 			break;
 
@@ -401,7 +402,7 @@ void Client::checkGameInput(sf::Event Event)
 		if(clickTimer.getElapsedTime().asMilliseconds()>100)
 		{
 				
-		if(sf::Mouse::isButtonPressed(sf::Mouse::Left)  && !cardPicked && !menuOn)
+		if(sf::Mouse::isButtonPressed(sf::Mouse::Left)  && !cardPicked && !toolMenuOn)
 		{
 			sf::Int16 distanceX,distanceY,cardID = checkClick(sf::Mouse::getPosition(window));
 
@@ -425,7 +426,7 @@ void Client::checkGameInput(sf::Event Event)
 			}
 		}
 
-			if(sf::Mouse::isButtonPressed(sf::Mouse::Right) && !menuOn)
+			if(sf::Mouse::isButtonPressed(sf::Mouse::Right) && !toolMenuOn)
 			{
 				sf::Int16 cardID = checkClick(sf::Mouse::getPosition(window));
 
@@ -483,9 +484,9 @@ void Client::checkDownloadInput(sf::Event Event)
 				cardSizeX = 170;
 				cardSizeY = 340;
 
-				if(!assLoad.check(fileName))
+				if(!assLoad->check(fileName))
 				{
-					assLoad.newDeck(fileName,cardAmount,cardSizeX,cardSizeY);
+					assLoad->newDeck(fileName,cardAmount,cardSizeX,cardSizeY);
 					std::cout<<"Added new image to ass"<<std::endl;
 				}
 				makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
@@ -521,7 +522,6 @@ void Client::checkInput()
 {
 	sf::Event Event;
 
-
 	while(window.pollEvent(Event))
 	{
 		
@@ -536,11 +536,12 @@ void Client::checkInput()
 				checkGameInput(Event);
 			else
 				areaTool(Event);
-				//joku funktio
 
 			break;
 		case DOWNLOADS:
 			checkDownloadInput(Event);
+				if(deckMenuOn)
+
 			break;
 		case CONNECTIONS:
 			checkConnectionInput(Event);
@@ -557,24 +558,32 @@ void Client::checkInput()
 		case sf::Event::KeyPressed:
 			if(Event.key.code == sf::Keyboard::Escape)
 				toolMenu();
+			if(deckMenuOn)
+				deckMenuOn = false;
 			break;
 		case sf::Event::MouseButtonPressed:
-			if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && menuOn)
+			if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && toolMenuOn)
 			{
-				buttonStuff();
+				checkToolMenu();
 			}
 			break;
 		}
 	}
 }
 
-void Client::buttonStuff()
+void Client::checkToolMenu()
 {
 	sf::Vector2i mouse = sf::Mouse::getPosition(window);
-	mouse.x+=window.getSize().x*0.333f;
-	int pushTheButton = tools.checkButtons(mouse);
+	mouse.x+=window.getSize().x*0.2f;
+	
+	if(deckMenuOn)
+		{
+			checkDeckMenu();
+		}
 
-	switch(pushTheButton)
+	int option = tools.checkButtons(mouse);
+
+	switch(option)
 	{
 	case -1:
 		break;
@@ -587,12 +596,63 @@ void Client::buttonStuff()
 		break;
 
 	case 1:
-
+		if(currentPhase == DOWNLOADS)
+			deckMenuOn = !deckMenuOn;
 		break;
 	case 2:
 		window.close();
 		std::exit(0);
 		break;
+	}
+}
+
+void Client::checkDeckMenu()
+{
+	sf::Vector2i mouse = sf::Mouse::getPosition(window);
+	mouse.x+=window.getSize().x*0.2f;
+
+	int option = deckMenu.checkButtons(mouse);
+
+	switch(option)
+	{
+	case 0:
+		std::cout<<"button 1"<<std::endl;
+		deckMaker.run();
+		deckMenu.loadDecks();
+		break;
+	case 1:
+		std::cout<<"button 2"<<std::endl;
+
+		deckMenu.upDecks();
+
+		for(int i = 0; i < assLoad->getDecks().size();i++)
+		{
+			std::cout<<assLoad->getDecks().at(i).getName()<<std::endl;
+		}
+
+		break;
+	
+	case -1:
+		break;
+	
+	default:
+		std::cout<<assLoad->getDecks().at(option-2).getName()<<std::endl;
+		fileName = assLoad->getDecks().at(option-2).getName();
+		cardAmount = assLoad->getDecks().at(option-2).getCardAmount();
+		cardSizeX = assLoad->getDecks().at(option-2).getSizeX();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+		cardSizeY = assLoad->getDecks().at(option-2).getSizeY();
+
+		if(!assLoad->check(fileName))
+				{
+					assLoad->newDeck(fileName,cardAmount,cardSizeX,cardSizeY);
+					std::cout<<"Added new image to ass"<<std::endl;
+				}
+				makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
+
+				packet.clear();
+				packetID = REQUEST_UPLOAD;
+				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
+				TCPsocket.send(packet);
 	}
 }
 
@@ -806,30 +866,6 @@ sf::Int16 Client::checkClick(sf::Vector2i mousepos)
 	{
 		if(cards[i]._sprite.getGlobalBounds().contains(mouse))
 		{
-			//sf::Sprite sprite;
-			////sprite.setTexture();
-
-			//sf::Vector2f distance;
-
-			//distance = sf::Vector2f(cards[i]._sprite.getTextureRect().left,cards[i]._sprite.getTextureRect().top)-cards[i]._sprite.getPosition();
-			//std::cout<<"X: "<<distance.x<<"Y :"<<distance.y<<std::endl;
-
-			//sf::IntRect mouseRect(mouse.x,mouse.y,1,1);
-
-			//mouseRect.left+=distance.x;
-			//mouseRect.top+=distance.y;
-			//std::cout<<"mouseX: "<<mouseRect.left<<"mouseY: "<<mouseRect.top<<std::endl;
-
-			//sprite.setTextureRect(mouseRect);
-
-			//int r = sprite.getColor().r;
-			//int g = sprite.getColor().g;
-			//int b = sprite.getColor().b;
-			//int a = sprite.getColor().a;
-		
-
-			//std::cout<<"r"<<r<<"g"<<g<<"b"<<b<<"a"<<a<<std::endl;
-
 
 			CardObject temp = cards[i];
 			cards.erase(cards.begin()+i);
@@ -1003,16 +1039,16 @@ void Client::receiveImageFile(std::string filename,sf::Int16 amount,sf::Int16 x,
 			writeImageFile(filename,data,outputFile);
 			break;
 		case UPLOAD_DONE:
-			std::cout<<"Server says upload done, I believe"<<std::endl;
+			std::cout<<"Server upload done"<<std::endl;
 			std::cout<<"Time: "<<uploadTime.getElapsedTime().asSeconds()<<std::endl;
 			std::cout<<"Number of packets received: "<<packetCounter<<std::endl;
 			done = true;
 			outputFile->close();
 			TCPsocket.setBlocking(false);
-			if(!assLoad.check(filename))
+			if(!assLoad->check(filename))
 			{
-				assLoad.newDeck(filename,cardAmount,cardSizeX,cardSizeY);
-				std::cout<<"Added new image to ass"<<std::endl;
+				assLoad->newDeck(filename,cardAmount,cardSizeX,cardSizeY);
+				std::cout<<"Added new image to assets"<<std::endl;
 			}
 			makeDeck(filename,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
 			break;
@@ -1047,7 +1083,7 @@ void Client::makeDeck(std::string filename, int cardAmount,sf::Vector2f cardSize
 	int size = cards.size();
 
 	sf::Texture *texture = new sf::Texture;
-	texture = assLoad.getTexture(filename);
+	texture = assLoad->getTexture(filename);
 
 	if(texture != NULL)
 	{
@@ -1093,7 +1129,7 @@ void Client::makeDeck(std::string filename, int cardAmount,sf::Vector2f cardSize
 	decks.push_back(DeckObject(cards,size));
 	}
 	else
-		std::cout<<"Texture is so fucking NULL"<<std::endl;
+		std::cout<<"Texture NULL"<<std::endl;
 }
 
 void Client::putCardOnTop(int cardID)
@@ -1161,13 +1197,13 @@ void Client::toolMenu()
 	if(window.getView().getCenter()==window.getDefaultView().getCenter())
 	{		
 		sf::View view(window.getView());
-		view.move(window.getSize().x*0.333f,0);
+		view.move(window.getSize().x*0.2f,0);
 		window.setView(view);
 		window.setMouseCursorVisible(true);
 		if(shapes.size()>0)
 			shapes[ownIndex].setFillColor(sf::Color::Transparent);
 		dropCard();
-		menuOn = true;
+		toolMenuOn = true;
 	}
 	else
 	{	
@@ -1178,7 +1214,7 @@ void Client::toolMenu()
 		}
 		window.setView(window.getDefaultView());
 		window.setMouseCursorVisible(false);
-		menuOn = false;
+		toolMenuOn = false;
 	}
 
 }
@@ -1206,6 +1242,9 @@ void Client::draw()
 	
 	if(makingArea)
 		window.draw(tempRect);
+
+	if(deckMenuOn)
+		deckMenu.draw(window);
 
 	window.display();
 }
