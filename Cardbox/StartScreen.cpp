@@ -133,7 +133,6 @@ void StartScreen::askIP()
 void StartScreen::askWhatYouWannaDo()
 {
 	sf::Event Event;
-
 		_screenText.setString("WhatYouWannaDo?");
 		_screenText.setOrigin(_screenText.getGlobalBounds().width*0.5f,_screenText.getGlobalBounds().height*0.5f);
 		bool done = false;
@@ -193,6 +192,10 @@ void StartScreen::askWhatYouWannaDo()
 					}
 				}
 
+	
+			}
+
+			}
 		switch(_option)
 			{
 			case HOSTPLAY:
@@ -200,25 +203,23 @@ void StartScreen::askWhatYouWannaDo()
 				_CenterBlock.setFillColor(sf::Color::White);
 				_RightBlock.setFillColor(sf::Color::White);
 				_blockText.setPosition(_LeftBlock.getPosition());
-				_blockText.setString("HOSTPLAY");
+				_blockText.setString("HostPlay");
 				break;
 			case PLAY:
 				_LeftBlock.setFillColor(sf::Color::White);
 				_CenterBlock.setFillColor(sf::Color::Green);
 				_RightBlock.setFillColor(sf::Color::White);
 				_blockText.setPosition(_CenterBlock.getPosition());
-				_blockText.setString("PLAY");
+				_blockText.setString("Play");
 				break;
 			case HOST:
 				_CenterBlock.setFillColor(sf::Color::White);
 				_RightBlock.setFillColor(sf::Color::Green);
 				_LeftBlock.setFillColor(sf::Color::White);
 				_blockText.setPosition(_RightBlock.getPosition());
-					_blockText.setString("HOST");
+				_blockText.setString("Host");
 				break;
-			}
 
-			}
 		}
 		draw();
 		}

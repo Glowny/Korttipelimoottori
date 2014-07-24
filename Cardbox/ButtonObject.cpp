@@ -8,6 +8,9 @@ ButtonObject::ButtonObject(sf::Font font,std::string string)
 	_text.setFont(*_font);
 	_text.setString(string);
 	_text.setColor(sf::Color::Black);
+
+
+
 }
 
 ButtonObject::ButtonObject(sf::Font font,std::string string, sf::Texture texture)
@@ -51,6 +54,14 @@ void ButtonObject::setPosition(sf::Vector2f position)
 	}
 }
 
+void ButtonObject::adapt()
+{
+	float ratiox = _shape.getGlobalBounds().width/_text.getGlobalBounds().width;
+	float ratioy = _shape.getGlobalBounds().height/_text.getGlobalBounds().height;
+	ratioy*=0.5f;
+	_text.setScale(ratiox,ratioy);
+}
+
 void ButtonObject::setSize(sf::Vector2f size)
 {
 	if(_sprite.getTexture() != NULL)
@@ -60,11 +71,13 @@ void ButtonObject::setSize(sf::Vector2f size)
 		_sprite.setScale(scaleX,scaleY);
 	}
 	else
-		_shape = sf::RectangleShape(size);
+	_shape = sf::RectangleShape(size);
 	_text.setCharacterSize(0.5f*size.y);
 	_shape.setOutlineThickness(1.0f);
 	_shape.setOutlineColor(sf::Color::Black);
+
 }
+
 
 sf::FloatRect ButtonObject::getGlobalBounds()
 {

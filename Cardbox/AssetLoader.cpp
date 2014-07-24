@@ -86,6 +86,20 @@ void AssetLoader::newDeck(std::string s,int amount,int sizex,int sizey)
 	writeAssetList();
 }
 
+void AssetLoader::eraseDeck(std::string s, int amount, int sizex, int sizey)
+{
+	for(int i = 0; i < deckVector.size();i++)
+	{		
+		if(deckVector[i].getName() == s && deckVector[i].getCardAmount() == amount
+			&& deckVector[i].getSizeX() == sizex && deckVector[i].getSizeY() == sizey)
+		{
+			deckVector.erase(deckVector.begin()+i);
+				break;
+		}	
+	}
+	writeAssetList();
+}
+
 bool AssetLoader::check(std::string s)
 {
 	std::map<std::string,sf::Texture*>::iterator it;

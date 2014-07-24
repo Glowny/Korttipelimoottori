@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 class Deck
 {
 public:
@@ -14,8 +15,10 @@ public:
 	int getCardAmount(){return cardAmount;}
 	int getSizeX(){return sizeX;}
 	int getSizeY(){return sizeY;}
+	std::string toString();
 private:
 	std::string filename;
 	int cardAmount,sizeX,sizeY,stringSize;
+	std::string convertInt(int number);
 };
 

@@ -122,23 +122,6 @@ void Server::dialoguePhase()
 		{
 		case EMPTY:
 
-			/*state = _dWindow->checkQuestion(i);
-			switch(state)
-			{
-			case -1:
-				break;
-			case 0:
-				_packet.clear();
-				_packetID = DECLINE_REQUEST;
-				_clients[i]->send(_packet);
-				break;
-			case 1:
-				_packet.clear();
-				_packetID = ACCEPT_REQUEST;
-				_clients[i]->send(_packet);
-				break;
-			}*/
-
 			break;
 		case CONTINUE:
 
@@ -154,9 +137,6 @@ void Server::dialoguePhase()
 			_currentPhase = GAME;
 
 			std::cout<<"Server going to gamePhase"<<std::endl;
-
-			//_dWindow->close();
-			//delete _dWindow;
 			break;
 		case REQUEST_UPLOAD:
 		

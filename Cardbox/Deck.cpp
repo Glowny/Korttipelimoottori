@@ -24,6 +24,28 @@ void Deck::writeToFile(std::fstream &stream)
 	stream.write((char*)&sizeY,sizeof(int));
 }
 
+std::string Deck::toString()
+{
+	std::string temp;
+
+	temp+=filename;
+	temp+="A:";
+	temp+=convertInt(cardAmount);
+	temp+="X:";
+	temp+=convertInt(sizeX);
+	temp+="Y:";
+	temp+=convertInt(sizeY);
+
+	return temp;
+}
+
+
+std::string Deck::convertInt(int number)
+{
+	std::stringstream ss;//create a stringstream
+	ss << number;//add number to the stream
+	return ss.str();//return a string with the contents of the stream
+}
 
 
 void Deck::readFromFile(std::fstream &stream)

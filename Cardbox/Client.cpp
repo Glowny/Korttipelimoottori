@@ -17,6 +17,7 @@ Client::Client(AssetLoader *al) :assLoad(al), window(sf::RenderWindow(sf::VideoM
 	drawMode = false;
 	makingArea = false;
 	deckMenuOn = false;
+	deleteMode = false;
 
 	//dView = new DialogueView();
 }
@@ -79,6 +80,7 @@ void Client::connectionPhase()
 		case CONTINUE:
 			currentPhase = DOWNLOADS;
 			std::cout<<"Client going to downloadsPhase"<<std::endl;
+			toolMenu();
 			break;
 		case START:
 			handleStartPacket();
@@ -123,7 +125,6 @@ void Client::downloadPhase()
 	case EMPTY:
 		break;
 	case CONTINUE:
-
 		currentPhase = GAME;
 		std::cout<<"Client going to gamePhase"<<std::endl;
 		window.setMouseCursorVisible(false);
@@ -475,30 +476,10 @@ void Client::checkDownloadInput(sf::Event Event)
 			TCPsocket.send(packet);
 			std::cout<<"Sending continue"<<std::endl;
 		}
+		break;
 
-		if(Event.key.code == sf::Keyboard::Num1)
-			{
-				std::cout<<"Sending upload request"<<std::endl;
-				fileName = "vesa.png";
-				cardAmount = 10;
-				cardSizeX = 170;
-				cardSizeY = 340;
+		}
 
-				if(!assLoad->check(fileName))
-				{
-					assLoad->newDeck(fileName,cardAmount,cardSizeX,cardSizeY);
-					std::cout<<"Added new image to ass"<<std::endl;
-				}
-				makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
-
-				packet.clear();
-				packetID = REQUEST_UPLOAD;
-				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
-				TCPsocket.send(packet);
-			}
-
-			break;
-	}
 }
 
 void Client::checkConnectionInput(sf::Event Event)
@@ -625,34 +606,48 @@ void Client::checkDeckMenu()
 
 		deckMenu.upDecks();
 
-		for(int i = 0; i < assLoad->getDecks().size();i++)
-		{
-			std::cout<<assLoad->getDecks().at(i).getName()<<std::endl;
-		}
-
 		break;
-	
+	case 2:
+		std::cout<<"button 3"<<std::endl;
+		deckMenu.upDecks();
+		deleteMode = !deleteMode;
+		break;
 	case -1:
 		break;
 	
 	default:
-		std::cout<<assLoad->getDecks().at(option-2).getName()<<std::endl;
-		fileName = assLoad->getDecks().at(option-2).getName();
-		cardAmount = assLoad->getDecks().at(option-2).getCardAmount();
-		cardSizeX = assLoad->getDecks().at(option-2).getSizeX();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-		cardSizeY = assLoad->getDecks().at(option-2).getSizeY();
+//tähän mode checkings
+		if(!deleteMode)
+		{
+		//std::cout<<assLoad->getDecks().at(option-3).getName()<<std::endl;
+		fileName = assLoad->getDecks().at(option-3).getName();
+		cardAmount = assLoad->getDecks().at(option-3).getCardAmount();
+		cardSizeX = assLoad->getDecks().at(option-3).getSizeX();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+		cardSizeY = assLoad->getDecks().at(option-3).getSizeY();
 
 		if(!assLoad->check(fileName))
-				{
-					assLoad->newDeck(fileName,cardAmount,cardSizeX,cardSizeY);
-					std::cout<<"Added new image to ass"<<std::endl;
-				}
-				makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
+			{
+				assLoad->newDeck(fileName,cardAmount,cardSizeX,cardSizeY);
+				std::cout<<"Added new image to ass"<<std::endl;
+			}
+			makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
 
-				packet.clear();
-				packetID = REQUEST_UPLOAD;
-				packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
-				TCPsocket.send(packet);
+			packet.clear();
+			packetID = REQUEST_UPLOAD;
+			packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
+			TCPsocket.send(packet);
+		}
+		else
+		{
+		fileName = assLoad->getDecks().at(option-3).getName();
+		cardAmount = assLoad->getDecks().at(option-3).getCardAmount();
+		cardSizeX = assLoad->getDecks().at(option-3).getSizeX();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+		cardSizeY = assLoad->getDecks().at(option-3).getSizeY();
+
+		assLoad->eraseDeck(fileName,cardAmount,cardSizeX,cardSizeY);
+		deckMenu.loadDecks();
+
+		}
 	}
 }
 

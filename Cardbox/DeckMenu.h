@@ -1,6 +1,6 @@
 #pragma once
 #include "ToolMenu.h"
-
+#include <sstream>
 
 class DeckMenu : public ToolMenu
 {
@@ -11,6 +11,7 @@ public:
 	void upDecks(){showDecks = !showDecks;}
 	void loadDecks();
 	~DeckMenu(void);
+
 private:
 	
 	void newDeckOption(std::string name);

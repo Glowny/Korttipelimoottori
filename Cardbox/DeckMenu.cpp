@@ -8,6 +8,8 @@ DeckMenu::DeckMenu(AssetLoader &al,sf::Vector2u windowsize):ToolMenu(al, windows
 	buttons.clear();
 	buttons.push_back(ButtonObject(font,"Make Deck"));
 	buttons.push_back(ButtonObject(font,"Up Deck"));
+	buttons.push_back(ButtonObject(font,"Delete Deck"));
+
 	loadDecks();
 	arrange(buttons,0);
 	showDecks = false;
@@ -51,10 +53,15 @@ void DeckMenu::loadDecks()
 	secondButtons.clear();
 
 	for(int i = 0; i < assLoad.getDecks().size();i++)
-	{
-		secondButtons.push_back(ButtonObject(font,assLoad.getDecks()[i].getName()));
+	{	
+		secondButtons.push_back(ButtonObject(font,assLoad.getDecks()[i].toString()));
 	}
 	arrange(secondButtons,-area.getSize().x);
+
+	for(int i = 0; i < secondButtons.size();i++)
+	{
+		secondButtons[i].adapt();
+	}
 }
 
 void DeckMenu::draw(sf::RenderWindow &window)

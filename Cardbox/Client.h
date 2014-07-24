@@ -79,7 +79,7 @@ private:
 	sf::FloatRect windowRect;
 	sf::Clock clickTimer;
 
-	bool toolMenuOn,makingArea,cardPicked,drawMode,deckMenuOn;
+	bool toolMenuOn,makingArea,cardPicked,drawMode,deleteMode,deckMenuOn;
 	unsigned short serverPort;
 	float deltaTime;
 

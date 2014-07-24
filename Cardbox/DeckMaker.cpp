@@ -118,6 +118,7 @@ int DeckMaker::askInt(std::string question)
 		}
 	}
 
+	//muutetaan string 'char' kerrallaan inteiksi jotta tiedet‰‰n ett‰ mit‰ vittua kirjotettu
 	int completeInt = 0;
 	int intBuffer;
 	char charBuffer;
@@ -132,7 +133,7 @@ int DeckMaker::askInt(std::string question)
 
 		intBuffer = (int)charBuffer - '0';
 
-
+		//sick 10 potenssi math magic, power = potenssi
 		power = pow(base,(stringSize-1-i));
 	
 		intBuffer*=power;
