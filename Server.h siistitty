@@ -1,0 +1,52 @@
+#pragma once
+#include <iostream>
+#include <algorithm>
+#include <fstream>
+
+#include "SFML\Network.hpp"
+#include "SFML\Graphics.hpp"
+
+#include "Interface.h"
+#include "Enums.h"
+
+class Server
+{
+public:
+	Server(void);
+
+	void reset();
+	void run();
+
+	~Server(void);
+
+private:
+
+	void connectionPhase();
+	void sendStartPackets();
+	void downloadPhase();
+	bool checkFileExistence(std::string filename);
+	void receiveImageFile(std::string filename, int clientIndex, sf::Int16 amount, sf::Int16 x, sf::Int16 y);
+	void writeImageFile(std::string filename, std::string data, std::fstream* output);
+	void sendImageFile(std::string filename, int index);
+	void receiveTCP();
+	void sendToAll(sf::Packet packet);
+	void sendToAll(int butt, sf::Packet packet);
+	void update();
+
+
+	PHASE _currentPhase;
+	Interface _interface;
+
+	sf::TcpListener _listener;
+	sf::SocketSelector _selector;
+	sf::Packet _packet;
+	sf::Clock _receiveTimer, _sendTimer;
+	sf::Int16 _packetID, tempCardSizeY, tempCardSizeX, tempCardAmount;
+
+	unsigned short _port;
+	int totalCards, _theSeed;
+
+	std::string tempFileName;
+	std::vector<sf::Color> _playerColors;
+	std::vector<sf::TcpSocket*> _clients;
+};
