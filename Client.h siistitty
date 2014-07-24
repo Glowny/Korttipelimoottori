@@ -1,0 +1,91 @@
+#pragma once
+#include <time.h>
+#include <fstream>
+
+#include <SFML\Network.hpp>
+#include <SFML\Graphics.hpp>
+
+#include "Enums.h"
+#include "CardObject.h"
+#include "AssetLoader.h"
+#include "ToolMenu.h"
+#include "DeckObject.h"
+
+class Client
+{
+public:
+
+	Client(AssetLoader &al);
+
+	void run();
+	void connect(sf::IpAddress ip, int port, std::string id);
+
+	~Client(void);
+
+private:
+
+	void connectionPhase();
+	void handleStartPacket();
+	void initPlayers();
+	void downloadPhase();
+	void receiveImageFile(std::string filename, sf::Int16 amount, sf::Int16 x, sf::Int16 y);
+	void writeImageFile(std::string filename, std::string data, std::fstream* output);
+	void sendImageFile(std::string filename);
+	void makeDeck(std::string filename, int cardAmount, sf::Vector2f cardSize);
+	void gamePhase();
+	void receiveTCP();
+	void sendMouse();
+	void smootheMouse(int index, sf::Vector2f oldpos, sf::Vector2f newpos);
+	void toolMenu();
+	void buttonStuff();
+	void areaTool(sf::Event Event);
+	void makeHandArea(int playerIndex, sf::FloatRect floatRect);
+	void checkHandAreas(int cardID);
+	void checkInput();
+	void checkConnectionInput(sf::Event Event);
+	void checkDownloadInput(sf::Event Event);
+	void checkGameInput(sf::Event Event);
+	sf::Int16 checkClick(sf::Vector2i mousepos);
+	void putCardOnTop(int cardID);
+	void checkCardOwnage(int cardID);
+	void dropCard();
+	void moveCard(sf::Int16 playerID, sf::Int16 cardID);
+	void rotateCard(int cardID);
+	void arrangeDecks();
+	bool checkBoundaries(sf::FloatRect floatRect);
+	void zoomzoom(int delta);
+	void correctView(sf::Vector2f viewSize);
+	void draw();
+
+
+	ToolMenu tools;
+	AssetLoader &assLoad;
+	PHASE currentPhase;
+	
+	sf::RectangleShape tempRect;
+	sf::TcpSocket TCPsocket;
+	sf::IpAddress serverIP;
+	sf::Packet packet;
+	sf::Int16 packetID,posX,posY,playerCount,ownIndex,cardAmount,cardSizeY,cardSizeX,pickedCard;
+	sf::RenderWindow window;
+	sf::Clock _sendTimer;
+	sf::Time deltaTime_time;
+	sf::Clock deltaClock;
+	sf::Vector2f distance;
+	sf::FloatRect windowRect;
+	sf::Clock clickTimer;
+
+	bool menuOn,makingArea,cardPicked,drawMode;
+	unsigned short serverPort;
+	float deltaTime;
+
+	std::string ownName,fileName;
+	std::vector<DeckObject>decks;
+	std::vector<CardObject>cards;
+	std::vector<int> pickers,pickings;
+	std::vector<sf::RectangleShape> shapes;
+	std::vector<std::string>playerNames;
+	std::vector<sf::Color>playerColors;
+	std::vector<sf::RectangleShape>handAreas;
+	std::vector<sf::Vector2f> otherPlayersMousePos, otherPlayersMouseDist;
+};
