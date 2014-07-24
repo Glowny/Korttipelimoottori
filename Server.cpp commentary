@@ -1,0 +1,495 @@
+#include "Server.h"
+
+Server::Server(void)
+{
+	totalCards = 0;
+	_port = 2000;
+	_listener.listen(_port);		//kuunnellaan porttia
+	_selector.add(_listener);
+
+	_theSeed = time(NULL);			//alustetaan randomeille seed, jota kaikki clientit käyttävät sekoituksiin ym.
+	std::srand(_theSeed);
+
+	_currentPhase = CONNECTIONS;	//asetetaan vaihe uusien yhteyksien vastaanottamista varten
+
+	//työnnetään vektoriin erilaisia värejä joita voidaan jakaa yhdistäville pelaajille
+	for(int i = 0; i < 7;i++)
+	{
+		_playerColors.push_back(sf::Color(i*32,255,i*32,255));
+	}
+
+	for(int i = 0; i < 7;i++)
+	{
+		_playerColors.push_back(sf::Color(255,i*32,i*32,255));
+	}
+
+	for(int i = 0; i < 7;i++)
+	{
+		_playerColors.push_back(sf::Color(i*32,i*32,255,255));
+	}
+
+	//sekoitetaan värit, jotta olisi jännitävää pelaajilla saada hieno väri
+	std::random_shuffle(_playerColors.begin(), _playerColors.end());
+}
+
+void Server::reset()
+{
+	_packet.clear();
+	_clients.clear();
+	_selector.clear();
+	_selector.add(_listener);
+}
+
+void Server::connectionPhase()
+{
+	//venaillaan uusia yhteyksiä
+	if(_selector.wait(sf::seconds(0.01f)))
+	{
+		if(_selector.isReady(_listener))
+		{	
+			std::string id;
+
+			sf::TcpSocket* TCPsocket = new sf::TcpSocket;
+			
+			_listener.accept(*TCPsocket);		//otetaan löydetty yhdistysyritys vastaan
+				
+			_packet.clear();
+			if(TCPsocket->receive(_packet) == sf::Socket::Done)
+			{
+				_packet>>id;					//otetaan vastaan yhdistäneen käyttäjän ID
+			}
+			
+			TCPsocket->setBlocking(false);
+
+			sf::IpAddress ip = TCPsocket->getRemoteAddress();	//otetaan talteen yhdistäneen käyttäjän IP, periaatteessa turha nyt kun ei käytetä UDP:tä
+
+			std::cout<<id<<" has connected to the session";
+			std::cout<<" with ip: "<<ip.toString()<<" & port: "<<std::endl;
+			_interface.addPlayer(id,ip);						//laitetaan pelaajan tiedot talteen
+			_clients.push_back(TCPsocket);						//lisätään käyttäjän socketti vektoriin myöhempää käyttöä varten
+			_selector.add(*TCPsocket);
+			
+		}
+	}
+
+	//katsotaan lähettävätkö käyttäjät paketteja
+	for(int i = 0; i < _clients.size(); i++)
+	{
+	_packet.clear();
+
+	_packetID = EMPTY;
+
+	_clients[i]->receive(_packet);
+
+	_packet>>_packetID;		//otetaan paketista ID, joka kertoo miten toimia
+
+	switch(_packetID)
+	{
+	case EMPTY:
+		break;
+	case CONTINUE:
+		//jos joku käyttäjistä lähettää että "ok, jatketaans" niin lähetetään kaikille aloituspaketit
+		sendStartPackets();
+
+		//sekä tieto että ny jatketaan
+		_packet.clear();
+		_packetID = CONTINUE;
+		_packet<<_packetID;
+		sendToAll(_packet);
+
+		_currentPhase = DOWNLOADS;		//siirrytään kortit sisältävien kuvien lähettely ja latailu vaiheeseen
+
+		std::cout<<"Server going to downloadsPhase"<<std::endl;
+		break;
+	}
+	}
+}
+
+void Server::sendStartPackets()
+{
+	_packet.clear();
+
+	_packetID = START;
+
+	for (int i = 0; i < _clients.size(); i++)
+	{
+		sf::Int16 playerIndex = i, playerCount = _clients.size();
+
+		_packet << _packetID << playerIndex << playerCount; //pakettiin laitetaan pelaajan oma indexi ja pelaajien määrä
+
+		for (int j = 0; j < playerCount; j++)
+		{
+			_packet << _interface.getPlayer(j).ID;			//pakettiin laitetaan kaikkien pelaajien nimet
+			sf::Int16 r, g, b;
+			r = _playerColors[j].r;
+			g = _playerColors[j].g;
+			b = _playerColors[j].b;
+			_packet << r << g << b;							//pakettiin laitetaan kaikkien pelaajien väriarvot
+		}
+
+		_clients[i]->send(_packet);
+	}
+}
+
+void Server::downloadPhase()
+{
+	//katsotaan lähettääkö käyttäjät paketteja
+	for(int i = 0; i < _clients.size(); i++)
+	{
+		_packet.clear();
+
+		_packetID = EMPTY;
+
+		_clients[i]->receive(_packet);
+
+		_packet>>_packetID;		//otetaan paketista ID, joka kertoo miten toimia
+
+		switch(_packetID)
+		{
+		case EMPTY:
+			break;
+		case CONTINUE:
+			//jos joku käyttäjistä lähettää että jatketaan niin lähetellään kaikille että ny jatketaan
+			_packet.clear();
+			_packetID = CONTINUE;
+			_packet<<_packetID;
+			sendToAll(_packet);
+
+			_currentPhase = GAME;		//siirrytään peli vaiheeseen
+
+			std::cout<<"Server going to gamePhase"<<std::endl;
+			break;
+		case REQUEST_UPLOAD:
+			//joku käyttäjistä lähettää pyynnön uppia tiedosto
+			_packet>>tempFileName>>tempCardAmount>>tempCardSizeX>>tempCardSizeY;	//otetaan paketista tiedoston nimi, kuinka monta korttia se sisältää ja minkä kokoisia kortit ovat											
+			std::cout<<_interface.getPlayer(playerIndex).ID<<" sends request to upload "<<tempFileName<<"Amount: "<<tempCardAmount<<" X:"<<tempCardSizeX<<" Y:"<<tempCardSizeY<<std::endl;
+
+			if(checkFileExistence(tempFileName))			//tarkistetaan löytyykö saman nimistä tiedostoa
+			{
+				//jos löytyy niin lähetetään käyttäjän pyyntöön kieltävä vastaus
+				_packet.clear();
+				_packetID = DECLINE_REQUEST;
+				_packet<<_packetID;
+				_clients[playerIndex]->send(_packet);
+			}
+			else
+			{
+				//jos ei löydy niin lähetetään käyttäjän pyyntöön myöntävä vastaus
+
+				_packet.clear();
+				_packetID = ACCEPT_REQUEST;
+				_packet<<_packetID;
+				_clients[playerIndex]->send(_packet);
+				_clients[playerIndex]->setBlocking(true);		//asetetaan socket blokkaamaan jottei tiedoston dataa kadoteta
+
+				receiveImageFile(tempFileName, playerIndex,tempCardAmount,tempCardSizeX,tempCardSizeY);	//otetaan tiedosto vastaan
+			}
+
+			//lähetetään pyyntö uppia tiedosto muille käyttäjille
+			_packet.clear();
+			_packetID = REQUEST_UPLOAD;
+			_packet << _packetID << tempFileName << tempCardAmount << tempCardSizeX << tempCardSizeY;		//pakettiin samat tiedot kuin saadussa pyyntö paketissa
+			sendToAll(i, _packet);
+
+			totalCards += tempCardAmount;
+			break;
+		case ACCEPT_REQUEST:
+			//saadan käyttäjältä myöntävä vastaus lähetettyyn pyyntöön
+			_clients[playerIndex]->setBlocking(true);			//asetetaan socket blokkaamaan jottei tiedoston dataa kadoteta
+			sendImageFile(tempFileName, playerIndex);			//lähetetään tiedosto käyttäjälle
+			break;
+		case DECLINE_REQUEST:
+			//saadan käyttäjältä kieltävä vastaus lähetettyyn pyyntöön
+			break;
+		}		
+	}
+}
+
+bool Server::checkFileExistence(std::string filename)
+{
+	//koitetaan avata tiedosto
+	std::fstream file(filename);
+	//jos onnistuu päätellään että tiedosto löytyi, tiedosto suljetaan ja palautetaan true
+	if (file)
+	{
+		file.close();
+		return true;
+	}
+	//jos ei onnistu päätellään että ettei tiedostoa ole ja palautetaan false
+	else
+		return false;
+}
+
+void Server::receiveImageFile(std::string filename, int clientIndex, sf::Int16 amount, sf::Int16 x, sf::Int16 y)
+{
+	sf::Clock uploadTime;		//seurataan kuinka kauan kuvan lataamiseen menee
+	int packetCounter = 0;		//seurataan kuinka monta pakettia kuvan lataamiseen menee
+
+	std::fstream *outputFile = new std::fstream;
+
+	*outputFile = std::fstream(filename, std::ios::binary | std::ios::out);
+
+	bool done = false;
+	
+	//odotetaan dataa tai tietoa latauksen valmistumisesta käyttäjältä
+	while (!done)
+	{
+		_packet.clear();
+		_packetID = EMPTY;
+
+		std::string data;
+
+		_clients[clientIndex]->receive(_packet);
+
+		_packet >> _packetID;
+
+		switch (_packetID)
+		{
+		case UPLOAD:
+			//paketissa on dataa
+			std::cout << "Received upload packet" << std::endl;
+			packetCounter++;
+			_packet >> data;
+			writeImageFile(filename, data, outputFile);		//data kirjoitetaan tiedostoon
+			break;
+		case UPLOAD_DONE:
+			//käyttäjä ilmoittaa latauksen olevan valmis
+			std::cout << "Client says upload done, I don't believe" << std::endl;
+			std::cout << "Time: " << uploadTime.getElapsedTime().asSeconds() << std::endl;
+			std::cout << "Number of packets received: " << packetCounter << std::endl;
+			done = true;
+			outputFile->close();
+			_clients[clientIndex]->setBlocking(false);		//palautetaan socketti ei-blokkaavaksi kun tiedosto on kokonaisuudessaan vastaanotettu
+			break;
+		}
+	}
+}
+
+void Server::writeImageFile(std::string filename, std::string data, std::fstream* output)
+{
+	if (*output)
+	{
+		char buffer[61440];
+
+		int dataStringSize = data.size();
+
+		std::cout << "Data string size: " << dataStringSize << std::endl;
+
+		for (int i = 0; i < dataStringSize; i++)
+		{
+			buffer[i] = data[i];				//otetaan data merkkeinä talteen paketissa saadusta stringistä
+		}
+
+		for (int i = 0; i < dataStringSize; i++)
+		{
+			output->write(&buffer[i], 1);		//kirjoitetaan merkit taulukosta tiedostoon
+		}
+	}
+}
+
+void Server::sendImageFile(std::string filename, int index)
+{
+	int packetCounter = 0;					//seurataan kuinka monta pakettia tiedoston lähettämiseen menee
+	std::fstream inputFile(filename, std::ios::binary | std::ios::in);
+
+	if (inputFile)
+	{
+
+		char buffer[61440];
+		std::string sendString;
+		bool done = false;
+		int i;
+
+		_packetID = UPLOAD;
+
+		while (!done)
+		{
+			_packet.clear();
+			_packet << _packetID;
+
+			i = 0;
+
+			while (i < 61440 && inputFile.peek() != EOF)	//haetaan tiedostosta dataa merkkitaulukkoon kunnes se on täynnä tai tiedosto loppuu
+			{
+				inputFile.read(&buffer[i], 1);
+
+				i++;
+
+				if (inputFile.peek() == EOF)
+					done = true;
+			}
+
+			for (int j = 0; j < i; j++)
+			{
+				sendString.push_back(buffer[j]);			//laitetaan merkit taulukosta stringiin joka lähetetään
+			}
+			std::cout << "Sending buffer" << std::endl;
+			packetCounter++;
+			_packet << sendString;
+			_clients[index]->send(_packet);					//lähetetään datan sisältävä string
+			sendString.clear();
+		}
+		inputFile.close();
+	}
+	std::cout << "Done sending stuff" << std::endl;
+	std::cout << "Number of packets sent: " << packetCounter << std::endl;
+	_packet.clear();
+	_packetID = UPLOAD_DONE;
+	_packet << _packetID;
+	_clients[index]->send(_packet);							//lähetetään käyttäjälle tieto että tiedosto on lähetetty loppuun
+	_clients[index]->setBlocking(false);						//palautetaan socketti ei-blokkaavaksi kun tiedosto on kokonaisuudessaan lähetetty
+}
+
+void Server::receiveTCP()
+{
+	//pelivaiheen pakettien vastaanotto
+	//katsotaan lähettääkö käyttät paketteja
+	for(int i = 0; i < _clients.size(); i++)
+	{
+		_packet.clear();
+
+		_packetID = EMPTY;
+
+		_clients[i]->receive(_packet);
+
+		sf::Int16 x,y,cardID;			//väliaikaisia muuttujia sijainneille ja korttien tunnistamiseen
+
+		sf::Int16 seed = _theSeed;		//lähetettävä random seed jota käyttäjät käyttävät sekoituksiin ym.
+
+		_packet>>_packetID;				//otetaan paketista ID, joka kertoo miten toimia
+
+		switch(_packetID)
+		{
+			case EMPTY:
+				break;
+			case ROTATE_CARD:
+				//käyttäjä lähettää tiedon kääntäneensä korttia
+				_packet>>cardID>>x>>y;			//otetaan paketista kortin ID sekä x ja y
+				std::cout<<_interface.getPlayer(i).ID<<" rotateded cardID: "<<cardID<<std::endl;
+
+				//lähetetään muille käyttäjille tieto kortin kääntymisestä
+				_packet.clear();
+				_packetID = ROTATE_CARD;
+				_packet<<_packetID<<playerIndex<<cardID<<x<<y;
+				sendToAll(i, _packet);
+				break;
+			case TURN_CARD:
+				//käyttäjä lähettää tiedon kääntäneensä kortin ympäri
+				_packet>>cardID;			//otetaan paketista kortin ID
+				std::cout<<_interface.getPlayer(i).ID<<" turned cardID: "<<cardID<<std::endl;
+
+				//lähetetään muille käyttäjille tieto kortin ympäri kääntymisestä
+				_packet.clear();
+				_packetID = TURN_CARD;
+				_packet<<_packetID<<playerIndex<<cardID;
+				sendToAll(i, _packet);
+				break;
+			case PICK_UP_CARD:
+				//käyttäjä lähettää tiedon poimineensa kortin
+				_packet>>cardID>>x>>y;		//otetaan paketista kortin ID ja sen sijainti
+				std::cout<<_interface.getPlayer(i).ID<<" picked up cardID: "<<cardID<<std::endl;
+
+				//lähetetään muille käyttäjille tieto kortin poimimisesta
+				_packet.clear();
+				_packetID = PICK_UP_CARD;
+				_packet<<_packetID<<i<<cardID<<x<<y;	//pakettiin laitetaan vastaan otettujen tietojen lisäksi tieto siitä kuka kortin poimi
+				sendToAll(i, _packet);
+				break;
+			case RELEASE_CARD:
+				//käyttäjä lähettää tiedon laskeneensa kortin
+				_packet>>x>>y;				//otetaan paketista kortin sijainti
+				std::cout<<_interface.getPlayer(i).ID<<" dropped that shit on X: "<<x<<" Y: "<<y<<std::endl;
+
+				//lähetetään muille käyttäjille tieto kortin laskemisesta
+				_packet.clear();
+				_packetID = RELEASE_CARD;
+				_packet<<_packetID<<playerIndex<<x<<y;	//pakettiin laitetaan vastaan otettujen tietojen lisäksi tieto siitä kuka kortin laski
+				sendToAll(i, _packet);
+				break;
+			case MOVE_SHIT:
+				//käyttäjä lähettää tiedon hiirensä liikkeistä
+				_packet>>x>>y;				//otetaan paketista hiiren sijainti
+
+				//lähetetään muille käyttäjille tieto hiiren liikkeistä
+				_packet.clear();
+				_packetID = MOVE_SHIT;
+				_packet<<_packetID<<playerIndex<<x<<y;
+				sendToAll(i, _packet);
+				break;
+			case SHUFFLE:
+				//käyttäjä lähettää sekoitus pyynnön
+				_packet.clear();
+				_packetID = SHUFFLE;
+				_packet<<_packetID<<seed;				//pakettiin laitetaan sekoitukseen käytettävä random seed
+
+				//lähetetään sekoitus paketti kaikille käyttäjille
+				sendToAll(_packet);
+				break;
+			case AREA:
+				//käyttäjä lähettää tiedon luoneensa käsialueen
+				float aX,aY,w,h;
+				_packet>>aX>>aY>>w>>h;		//otetaan paketista alueen tiedot
+				std::cout<<"AREA: x: "<<aX<<" y: "<<aY<<" W: "<<w<<" H: "<<h;
+				std::cout<<" from "<<_interface.getPlayer(i).ID<<std::endl;
+
+				//lähetetään muille käyttäjille tieto luodusta alueesta
+				_packet.clear();
+				_packetID = AREA;
+				_packet<<_packetID<<playerIndex<<aX<<aY<<w<<h;
+				sendToAll(i, _packet);
+				break;
+			case MESSAGE:
+				//käyttäjä lähettää viestin
+				//feature ei vielä implementoitu
+				break;
+		}
+	}
+}
+
+void sendToAll(sf::Packet packet)
+{
+	for (int i = 0; i < _clients.size(); i++)
+	{
+		_clients[i]->send(packet);			//lähetetään paketti kaikille
+	}
+}
+
+void sendToAll(int butt, sf::Packet packet)
+{
+	for (int i = 0; i < _clients.size(); i++)
+	{
+		if (i != butt)
+			_clients[i]->send(packet);		//lähetetään paketti kaikille paitsi parametrina annetun indeksin omaavalle
+	}
+}
+
+void Server::run()
+{
+	while (true)
+	{
+		update();
+	}
+}
+
+void Server::update()
+{
+	//ajetaan eri funktio nykyisen vaiheen mukaan
+	switch(_currentPhase)
+	{
+	case CONNECTIONS:
+		connectionPhase();
+		break;
+	case DOWNLOADS:
+		downloadPhase();
+		break;
+	case GAME:
+		receiveTCP();
+		break;
+	}
+}
+
+Server::~Server(void)
+{
+	for(std::vector<sf::TcpSocket*>::iterator it = _clients.begin(); it != _clients.end(); it++)
+		delete *it;
+}
