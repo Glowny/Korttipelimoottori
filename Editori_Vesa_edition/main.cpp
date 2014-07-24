@@ -52,7 +52,7 @@ int main()
 	int number;
 	bool k=0;
 	bool mousePressed = 0;
-	std::string input = "0";
+	std::string input = "";
 	sf::Clock _timer;
 	sf::Vector2f clickPoint;
 	sf::RectangleShape deckArea(sf::Vector2f(300,300));
@@ -306,27 +306,49 @@ Draw draw(ShapeVector, window, _explosions);
 			mousePressed = 0;
 		if(k)
 		{
-				if (number == 0)
-				{
-					if (event.type == sf::Event::TextEntered)
+				if (event.type == sf::Event::TextEntered)
+					{
+						if (event.text.unicode < 128)
+						{input.push_back(static_cast<char>(event.text.unicode));
+						std::cout << input;}
+					}
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Return))
+					{
+						if (input.size() != 0)
 						{
-							if (event.text.unicode < 128)
-							{input.push_back(static_cast<char>(event.text.unicode));
-							std::cout << input;}
+							if (number == 0)
+								{
+								cardAmountX = atoi(input.c_str());
+								}
+								else if (number == 1)
+								{
+								cardAmountY = atoi(input.c_str());
+								}
+								else if (number == 2)
+								{
+								cardSizeX = atof(input.c_str())/2;
+								}
+								else if(number == 3)
+								{
+								cardSizeY = atof(input.c_str())/2;
+								}
+
+								input.clear();
+								k = false;
+
+								sf::Vector2f tempV;
+								for (int i = 0; i < ShapeVector.size(); i++)
+								{
+									if (ShapeVector[i]->type == IMAGE)
+									{
+										tempV == ShapeVector[i]->rect.getPosition();
+									}
+								}
+								sf::RectangleShape tempRect(sf::Vector2f(cardSizeX,cardSizeY));
+
+								topVector = createGrid(tempRect, tempV);
 						}
-				}
-				else if (number == 1)
-				{
-				
-				}
-				else if (number == 2)
-				{
-				
-				}
-				else if(number == 3)
-				{
-				
-				}
+					}
 		}
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
 		{
@@ -419,32 +441,40 @@ Draw draw(ShapeVector, window, _explosions);
 
 	if(mode == CHOOSEAMOUNT)
 	{
-		if(mousePressed == 0)
-		{
+		
 			if(sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
 			{
-				for (int i = 0; i < topVector.size(); i++)
+				if(mousePressed == 0)
 				{
-					if (topVector[i].getGlobalBounds().contains(mousePos))
+					for (int i = 0; i < topVector.size(); i++)
 					{
-						amountVector[i] = amountVector[i]++;
+						if (topVector[i].getGlobalBounds().contains(mousePos))
+						{
+							amountVector[i] = amountVector[i]++;
+							mousePressed = 1;
+						}
 					}
 				}
 			}
 			else if(sf::Mouse::isButtonPressed(sf::Mouse::Button::Right))
 			{	
-				for (int i = 0; i < topVector.size(); i++)
+				if(mousePressed == 0)
 				{
-					if (topVector[i].getGlobalBounds().contains(mousePos))
+					for (int i = 0; i < topVector.size(); i++)
 					{
-						amountVector[i] = amountVector[i]--;
+						if (topVector[i].getGlobalBounds().contains(mousePos))
+						{
+							amountVector[i] = amountVector[i]--;
+							mousePressed = 1;
+						}
 					}
-				}	
+				}
 			}
-			mousePressed = 1;
-		}
-		else
+			else
+			{
 			mousePressed = 0;
+			}
+
 	}
 
 	if (mode == SELECTSETSIZEMOUSE)	

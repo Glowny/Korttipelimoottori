@@ -12,7 +12,11 @@ public:
 private:
 	float cardWidth;
 	float cardHeight;
-	int cardAmount;
-	int cards[];
+	int cardAmount;	// kuinka monta erityyppistä korttia on
+	int cards[];	// kuinka monta kutakin erityyppistä korttia on
 };
+
+// oma read ja write niin kirjottaa aina oikeessa järjestyksessä
+// tallentaa olion ja gettereillä arvot
+
 
