@@ -1,0 +1,1211 @@
+#include "Client.h"
+
+Client::Client(AssetLoader &al) :assLoad(al), window(sf::RenderWindow(sf::VideoMode(760,760), "Cardbox")),tools(ToolMenu(al,sf::Vector2u(760,760)))
+{
+	window.setFramerateLimit(60);
+	std::srand(time(NULL));
+	
+	menuOn = false;
+	cardPicked = false;
+	drawMode = false;
+	makingArea = false;
+
+	windowRect = sf::FloatRect(-1.f,-1.f,window.getSize().x+2.f, window.getSize().y+2.f);
+
+	currentPhase = CONNECTIONS;				//asetetaan vaiheeksi serveriin yhdistäminen
+	
+	deltaTime_time = deltaClock.restart();
+}
+
+void Client::connect(sf::IpAddress ip, int port, std::string id)
+{
+	ownName = id;
+	serverIP = ip;
+	serverPort = port;
+	TCPsocket.connect(serverIP,serverPort);	//yhdistetään socketti serveriin
+	packet<<id;								//laitetaan pakettiin oma ID
+	TCPsocket.send(packet);
+	TCPsocket.setBlocking(false);
+
+	std::cout<<"Connected to server; ip: "<<serverIP<<" & port: "<<serverPort<<std::endl;
+
+	window.setTitle(ownName);				//asetetaan ikkunan otsikoksi oma ID
+}
+
+void Client::connectionPhase()
+{
+	//vastaanotetaan yhdistysvaiheen paketteja serveriltä
+	packet.clear();
+
+	packetID = EMPTY;
+
+	TCPsocket.receive(packet);
+
+	packet>>packetID;						//otetaan paketista ID joka kertoo miten toimia
+
+	switch(packetID)
+	{
+		case EMPTY:
+			break;
+		case CONTINUE:
+			//jos serveri ilmoittaa että jatketaan siirrytään vaiheesta seuraavaan
+			currentPhase = DOWNLOADS;
+			std::cout<<"Client going to downloadsPhase"<<std::endl;
+			break;
+		case START:
+			//serveriltä tulee aloituspaketti
+			handleStartPacket();
+			break;
+	}
+}
+
+void Client::handleStartPacket()
+{
+	packet>>ownIndex>>playerCount;			//otetaan paketista oma indeksi ja pelaajien kokonaismäärä
+
+	//otetaan paketista pelaajien nimet ja jokaiselle ominainen väri
+	for(int i = 0; i <playerCount;i++)
+	{
+		std::string name;
+		packet>>name;
+				
+		sf::Int16 r,g,b;
+		packet>>r>>g>>b;
+
+		playerNames.push_back(name);
+		playerColors.push_back(sf::Color(r,g,b));
+	}
+
+	initPlayers();							//alustetaan pelaajat
+}
+
+void Client::initPlayers()
+{
+	//tehdään hiiren liikkeitä seuraavista vektoreista riittävän kokoisia pelaajamäärän pohjalta
+	for (int i = 0; i < playerCount; i++)
+	{
+		if (i != ownIndex)
+		{
+			otherPlayersMousePos.push_back(sf::Vector2f());
+			otherPlayersMouseDist.push_back(sf::Vector2f());
+		}
+	//luodaan pelaajien hiiriä kuvaavat neliöt ja asetetaan ne pelaajille ominaisen värin värisiksi
+		shapes.push_back(sf::RectangleShape(sf::Vector2f(10, 10)));
+		shapes[i].setFillColor(playerColors[i]);
+	}
+}
+
+void Client::downloadPhase()
+{
+	//vastaanotetaan latausvaiheen paketteja serveriltä
+	packet.clear();
+
+	packetID = EMPTY;
+
+	TCPsocket.receive(packet);
+
+	packet>>packetID;				//otetaan paketista ID, joka kertoo miten toimia
+	
+	switch(packetID)
+	{
+	case EMPTY:
+		break;
+	case CONTINUE:
+		//jos serveri ilmoittaa että jatketaan siirrytään vaiheesta seuraavaan
+		currentPhase = GAME;
+		std::cout<<"Client going to gamePhase"<<std::endl;
+		window.setMouseCursorVisible(false);		//piilotetaan kursori, oman värinen neliö kuvaa hiirtä pelivaiheessa
+		
+		arrangeDecks();								//asetetaan pakat erilleen näytöllä
+		break;
+	case REQUEST_UPLOAD:
+		//serveri lähettää pyynnön uppia tiedosto
+		packet>>fileName>>cardAmount>>cardSizeX>>cardSizeY;	//otetaan paketista tiedoston nimi, kuinka monta korttia se sisältää ja minkä kokoisia kortit ovat
+		std::cout<<"Server sends request to upload "<<fileName<<"Amount: "<<cardAmount<<" X:"<<cardSizeX<<" Y:"<<cardSizeY<<std::endl;
+		
+		//tarkistetaan löytyykö tiedostoa jo
+		if(assLoad.check(fileName))
+		{
+		//jos löytyy niin lähetetään kieltävä vastaus
+		packet.clear();
+		packetID = DECLINE_REQUEST;
+		packet<<packetID;
+		TCPsocket.send(packet);
+
+		makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));		//luodaan ruudulle pakka kuvasta
+		}
+		else
+		{
+		//jos ei löydy niin läähetetään myöntävä vastaus
+		packet.clear();
+		packetID = ACCEPT_REQUEST;
+		packet<<packetID;
+		TCPsocket.send(packet);
+		TCPsocket.setBlocking(true);		//asetetaan socket blokkaamaan jottei tiedoston dataa kadoteta
+
+		receiveImageFile(fileName,cardAmount,cardSizeX,cardSizeY);	//otetaan tiedosto vastaan
+		}
+		break;
+	case ACCEPT_REQUEST:
+		//saadaan serveriltä myöntävä vastaus lähetettyyn pyyntöön
+		std::cout<<"Got server acceptance"<<std::endl;
+		TCPsocket.setBlocking(true);		//asetetaan socket blokkaamaan jottei tiedoston dataa kadoteta
+		sendImageFile(fileName);			//lähetetään tiedosto
+		break;
+	case DECLINE_REQUEST:
+		//saadaan serveriltä kieltävä vastaus lähetettyyn pyyntöön
+		std::cout<<"Server says no"<<std::endl;
+		break;
+	}
+}
+
+void Client::receiveImageFile(std::string filename, sf::Int16 amount, sf::Int16 x, sf::Int16 y)
+{
+	sf::Clock uploadTime;					//seurataan kuinka kauan kuvan lataamiseen menee
+	int packetCounter = 0;					//seurataan kuinka monta pakettia kuvan lataamiseen menee
+
+	std::fstream *outputFile = new std::fstream;
+
+	*outputFile = std::fstream(filename, std::ios::binary | std::ios::out);
+
+	bool done = false;
+
+	//odotetaan dataa tai tietoa latauksen valmistumisesta serveriltä
+	while (!done)
+	{
+		packet.clear();
+		packetID = EMPTY;
+
+		std::string data;
+
+		TCPsocket.receive(packet);
+
+		packet >> packetID;
+
+		switch (packetID)
+		{
+		case UPLOAD:
+		//paketissa on dataa
+			std::cout << "Received upload packet" << std::endl;
+			packetCounter++;
+			packet >> data;
+			writeImageFile(filename, data, outputFile);		//data kirjoitetaan tiedostoon
+			break;
+		case UPLOAD_DONE:
+		//serveri ilmoittaa latauksen olevan valmis
+			std::cout << "Server says upload done, I believe" << std::endl;
+			std::cout << "Time: " << uploadTime.getElapsedTime().asSeconds() << std::endl;
+			std::cout << "Number of packets received: " << packetCounter << std::endl;
+			done = true;
+			outputFile->close();
+			TCPsocket.setBlocking(false);					//palautetaan socketti ei-blokkaavaksi kun tiedosto on vastaanotettu
+			if (!assLoad.check(filename))
+			{
+				assLoad.newDeck(filename, cardAmount, cardSizeX, cardSizeY);		//lisätään assetloaderin muistiin ja tiedostoon kirjoitettavaksi uuden pakan tiedot
+				std::cout << "Added new image to ass" << std::endl;
+			}
+			makeDeck(filename, cardAmount, sf::Vector2f(cardSizeX, cardSizeY));		//luodaan ruudulle pakka kuvasta
+			break;
+		}
+	}
+}
+
+void Client::writeImageFile(std::string filename, std::string data, std::fstream* output)
+{
+	if (*output)
+	{
+		char buffer[61440];
+
+		int dataStringSize = data.size();
+
+		std::cout << "Data string size: " << dataStringSize << std::endl;
+
+		for (int i = 0; i < dataStringSize; i++)
+		{
+			buffer[i] = data[i];				//otetaan data merkkeinä talteen paketissa saadusta stringistä
+		}
+
+		for (int i = 0; i < dataStringSize; i++)
+		{
+			output->write(&buffer[i], 1);		//kirjoitetaan merkit taulukosta tiedostoon
+		}
+	}
+}
+
+void Client::sendImageFile(std::string filename)
+{
+	int packetCounter = 0;						//seurataan kuinka monta pakettia tiedoston lähettämiseen menee
+	std::fstream inputFile(filename, std::ios::binary | std::ios::in);
+
+	if (inputFile)
+	{
+		char buffer[61440];
+		std::string sendString;
+		bool done = false;
+		int i;
+
+		packetID = UPLOAD;
+
+		while (!done)
+		{
+			packet.clear();
+			packet << packetID;
+
+			i = 0;
+
+			while (i < 61440 && inputFile.peek() != EOF)	//haetaan tiedostosta dataa merkkitaulukkoon kunnes se on täynnä tai tiedosto loppuu
+			{
+				inputFile.read(&buffer[i], 1);
+
+				i++;
+
+				if (inputFile.peek() == EOF)
+					done = true;
+			}
+
+			for (int j = 0; j < i; j++)
+			{
+				sendString.push_back(buffer[j]);			//laitetaan merkit taulukosta stringiin joka lähetetään
+			}
+			std::cout << "Sending buffer" << std::endl;
+			packetCounter++;
+			packet << sendString;
+			TCPsocket.send(packet);							//lähetetään datan sisältävä string
+			sendString.clear();
+		}
+		inputFile.close();
+	}
+	std::cout << "Done sending stuff" << std::endl;
+	std::cout << "Number of packets sent: " << packetCounter << std::endl;
+	packet.clear();
+	packetID = UPLOAD_DONE;
+	packet << packetID;
+	TCPsocket.send(packet);									//lähetetään serverille tieto että tiedosto on lähetetty loppuun
+	TCPsocket.setBlocking(false);							//palautetaan socketti ei-blokkaavaksi kun tiedosto on kokonaisuudessaan lähetetty
+}
+
+void Client::makeDeck(std::string filename, int cardAmount, sf::Vector2f cardSize)
+{
+	int size = cards.size();
+
+	sf::Texture *texture = new sf::Texture;
+	texture = assLoad.getTexture(filename);					//haetaan pakan luomiseen käytettävä tekstuuri assetloaderilla
+
+	if (texture != NULL)
+	{
+		float cardSizeY = cardSize.y;
+		float cardSizeX = cardSize.x;
+
+		sf::Vector2f textureSize = sf::Vector2f(texture->getSize());
+
+		int timesx = textureSize.x / cardSizeX;
+		int timesy = textureSize.y / cardSizeY;
+		bool brake = false;
+
+		//luodaan oikea määrä kortteja ja lisätään ne vektoriin
+		for (int y = 0; y < timesy; y++)
+		{
+			for (int x = 0; x < timesx; x++)
+			{
+				cards.push_back(CardObject(texture, sf::IntRect(x*cardSizeX, cardSizeY*y, cardSizeX, cardSizeY)));
+				if (cards.size() == cardAmount + size)
+				{
+					brake = true;
+					break;
+				}
+
+			}
+			if (brake)
+				break;
+
+		}
+
+		//otetaan korttien takapuolen sisältävä alue tekstuurista talteen
+		sf::IntRect backRect = cards[0]._sprite.getTextureRect();
+		cards.erase(cards.begin() + size);
+		std::cout << "cards.size():" << cards.size() << std::endl;
+
+		//asetetaan korttien ID:t ja tekstuurit sisältävät alueet, sekä skaalataan sopiviksi
+		for (int i = size; i < cards.size(); i++)
+		{
+			cards[i].setID(i);
+			cards[i].setBackRect(backRect);
+			cards[i].swapTexture();
+			cards[i]._sprite.setScale(0.3f, 0.3f);
+		}
+
+		//luodaan uusi pakkaolio joka sisältää kortit
+		decks.push_back(DeckObject(cards, size));
+	}
+	else
+		std::cout << "Texture is so fucking NULL" << std::endl;
+}
+
+void Client::gamePhase()
+{
+	if(!menuOn)						//jos valikko ei ole päällä siirretään hiirtä kuvaavaa neliötä ja lähetetään hiiren paikkatiedot
+	{	
+		shapes[ownIndex].setPosition(posX,posY);
+		sendMouse();
+	}
+
+	receiveTCP();					//otetaan serveriltä vastaan pelivaiheen paketteja
+
+	//sulavoitetaan hiiriä kuvaavien neliöiden liikkeitän
+	for(int i = 0; i < shapes.size(); i++)
+	{
+		if(i != ownIndex)
+		{
+			if(i>ownIndex)
+				smootheMouse(i, shapes[i].getPosition() ,otherPlayersMousePos[i-1]);
+			else
+				smootheMouse(i, shapes[i].getPosition() ,otherPlayersMousePos[i]);
+		}
+	}
+
+	//liikutetaan pelaajien nostamia kortteja
+	if(pickers.size()>0)
+	{
+		for(int i = 0; i < pickers.size();i++)
+		{
+			moveCard(pickers[i],pickings[i]);
+			checkHandAreas(pickings[i]);			//tarkistetaan onko liikutettu kortti käsialuuella
+		}
+	}
+}
+
+void Client::receiveTCP()
+{
+	packet.clear();
+
+	packetID = EMPTY;
+
+	TCPsocket.receive(packet);
+
+	packet >> packetID;							//otetaan paketista ID, joka kertoo miten toimia
+
+	sf::Int16 playerID, cardID, x, y;			//väliaikaisia muuttujia pelaajien ja korttien tunnistamiseen sekä sijainneille
+
+	sf::FloatRect tempFR;						//väliaikainen muuttuja käsialueen tietojen vastaanottoon
+
+	switch (packetID)
+	{
+	case MOVE_SHIT:
+		//vastaanotetaan hiiren liikkeitä
+		sf::Int16 tempX, tempY;
+		packet >> playerID >> tempX >> tempY;	//otetaan paketista hiiren sijainti ja hiiren omistavan pelaajan indeksi
+
+		if (playerID > ownIndex)				//toimenpide suoritettava koska vektoreissa ei ole omia tietoja
+			playerID--;
+
+		otherPlayersMousePos[playerID] = sf::Vector2f(tempX, tempY);	//päivitetään kyseisen pelaajan hiiren sijaintia
+		break;
+	case AREA:
+		//vastaanotetaan tieto käsialueen luomisesta
+		float aX, aY, w, h;
+		packet >> playerID >> aX >> aY >> w >> h;	//otetaan paketista alueen tiedot
+
+		std::cout << "AREA: x: " << aX << " y: " << aY << " W: " << w << " H: " << h;
+		std::cout << " from " << playerNames[playerID] << std::endl;
+
+		tempFR = sf::FloatRect(aX, aY, w, h);		//tehdään väliaikaisesta muuttujasta alueen mukainen
+		makeHandArea(playerID, tempFR);				//luodaan tietojen pohjalta näytölle käsialue
+		break;
+	case SHUFFLE:
+		//vastaanotetaan käsky sekoittaa kortit
+		sf::Int16 seed;
+		packet >> seed;								//otetaan paketista sekoitukseen käytettävä random seed
+		std::srand(seed);
+		std::random_shuffle(cards.begin(), cards.end());		//sekoitetaan kortit vektorissa
+		cardPicked = false;
+		pickers.clear();
+		pickings.clear();
+		//käännetään kertit takapuoli ylöspäin ja takaisin peruskulmaan jos ne eivät ole kenenkään kädessä
+		for (int i = 0; i < cards.size(); i++)
+		{
+			if (!cards[i].getHanded())
+			{
+				cards[i]._sprite.setRotation(0);
+				cards[i].backSideUp();
+			}
+		}
+		arrangeDecks();								//asetetaan pakat erilleen näytölle
+		break;
+	case PICK_UP_CARD:
+		//vastaanotetaan tieto kortin poimimisesta
+		packet >> playerID >> cardID >> x >> y;		//otetaan paketista kuka poimi, minkä poimi ja mistä poimi
+		std::cout << "player " << playerNames[playerID] << " picked " << cardID << " from X: " << x << " Y: " << y << std::endl;
+		checkCardOwnage(cardID);					//otetaan kortin omistajuus toisilta pois
+		//ja annetaan se nyt kortin poimineelle
+		pickers.push_back(playerID);
+		pickings.push_back(cardID);
+		putCardOnTop(cardID);						//asetetaan kortti piirtojärjestyksen päällimmäiseksi
+		if (playerID > ownIndex)					//toimenpide suoritettava koska vektoreissa ei ole omia tietoja
+			playerID--;
+		otherPlayersMouseDist[playerID] = sf::Vector2f(x, y);		//päivitetään kyseisen pelaajan hiiren sijainti suhteessa kortin originiin
+		break;
+	case RELEASE_CARD:
+		//vastaanotetaan tieto kortin laskemisesta
+		packet >> playerID >> x >> y;				//otetaan paketista kuka laskee ja minne laskee
+		std::cout << "player " << playerNames[playerID] << " dropped that shit to X: " << x << " Y: " << y << std::endl;
+		//etsitään korttia liikuttavista pelaajista oikea ja otetaan omistussuhde korttiin pois
+		for (int i = 0; i < pickers.size(); i++)
+		{
+			if (pickers[i] == playerID)
+			{
+				for (int j = 0; j < cards.size(); j++)
+				{
+					if (cards[j].getID() == pickings[i])
+					{
+						cards[j]._sprite.setPosition(sf::Vector2f(x, y));		//asetetaan kortin sijainniksi saadut koordinaatit
+						break;
+					}
+				}
+
+				pickers.erase(pickers.begin() + i);
+				pickings.erase(pickings.begin() + i);
+				break;
+			}
+
+		}
+		break;
+	case TURN_CARD:
+		//vastaanotetaan tieto kortin kääntämisestä ympäri
+		packet >> playerID >> cardID;				//otetaan paketista kuka kääntää ja mitä kääntää
+		std::cout << "player " << playerNames[playerID] << " turned " << cardID << std::endl;
+		putCardOnTop(cardID);						//asetetaan kortti piirtojärjestyksen päällimmäiseksi
+		cards[0].swapTexture();						//vaihdetaan kuvasta piirrettävää aluetta takapuolen ja etupuolen välillä
+		break;
+	case ROTATE_CARD:
+		//vastaanotetaan tieto kortin kääntämisestä
+		packet >> playerID >> cardID >> x >> y;				//otetaan paketista kuka kääntää,mitä kääntää ja uusi hiiren välimatka kortin originiin
+		std::cout << "player " << playerNames[playerID] << " rotated " << cardID << std::endl;
+		putCardOnTop(cardID);						//asetetaan kortti piirtojärjestyksen päällimmäiseksi
+		rotateCard(cardID);							//käännetään korttia
+		if (playerID > ownIndex)					//toimenpide suoritettava koska vektoreissa ei ole omia tietoja
+			playerID--;
+		otherPlayersMouseDist[playerID] = sf::Vector2f(x, y);	//päivitetään kyseisen pelaajan hiiren sijainti suhteessa kortin originiin
+		break;
+	case EMPTY:
+		break;
+	}
+}
+
+void Client::sendMouse()
+{
+	//lähetetään serverille hiiren koordinaatit sisältävä paketti 20 millisekunnin välein
+	if(_sendTimer.getElapsedTime().asMilliseconds()>20)
+	{
+	packet.clear();
+
+	packetID = MOVE_SHIT;
+
+	packet<<packetID<<ownIndex<<posX<<posY;
+
+	TCPsocket.send(packet);
+
+	_sendTimer.restart();
+	}
+}
+
+void Client::smootheMouse(int index, sf::Vector2f oldpos,sf::Vector2f newpos)
+{
+	sf::Vector2f homovector = newpos-oldpos;
+
+	if(homovector.x != 0 && homovector.y != 0)
+	{
+		shapes[index].move(homovector*deltaTime*0.005f);
+	}
+
+}
+
+void Client::toolMenu()
+{
+	//katsotaan onko view oletus
+	if (window.getView().getCenter() == window.getDefaultView().getCenter())
+	{
+		//jos on niin siirretään viewiä niin että valikko tulee näkyviin
+		sf::View view(window.getView());
+		view.move(window.getSize().x*0.333f, 0);
+		window.setView(view);
+		window.setMouseCursorVisible(true);							//asetetaan kursori näkyväksi
+		if (shapes.size()>0)
+			shapes[ownIndex].setFillColor(sf::Color::Transparent);	//muutetaan pelissä hiirtä kuvaava neliö läpinäkyväksi
+		dropCard();													//pudotetaan mahdollisesti poimittuna oleva kortti
+		menuOn = true;
+	}
+	else
+	{
+		//jos ei ole niin palautetaan view oletukseksi
+		if (shapes.size()>0)
+		{
+			shapes[ownIndex].setFillColor(playerColors[ownIndex]);	//palautetaan hiirtä kuvaavan laatikon väri
+			sf::Mouse::setPosition(sf::Vector2i(shapes[ownIndex].getPosition()), window);	//siirretään hiiri paikkaan jonne se jäi avatessa valikko
+		}
+		window.setView(window.getDefaultView());
+		window.setMouseCursorVisible(false);						//piilotetaan kursori
+		menuOn = false;
+	}
+
+}
+
+void Client::buttonStuff()
+{
+	sf::Vector2i mouse = sf::Mouse::getPosition(window);
+	mouse.x += window.getSize().x*0.333f;				//otetaan huomioon viewin siirto hiiren sijaintia seuratessa
+	int pushTheButton = tools.checkButtons(mouse);		//tarkistetaan onko valikon buttoneita painettu
+
+	switch (pushTheButton)
+	{
+	case -1:
+		break;
+	case 0:
+		//on valittu alueen luonti
+		//asetetaan piirtotila päälle jos ollaan pelivaiheessa
+		if (currentPhase == GAME)
+		{
+			drawMode = !drawMode;
+			toolMenu();
+		}
+		break;
+	case 1:
+		//tähän tulee jotain
+		break;
+	case 2:
+		//on valittu poistuminen
+		//suljetaan ikkuna ja ohjelman suoritus lopetetaan
+		window.close();
+		std::exit(0);
+		break;
+	}
+}
+
+void Client::areaTool(sf::Event Event)
+{
+	switch (Event.type)
+	{
+	case sf::Event::MouseButtonPressed:
+		//jos hiiren vasenta painetaan ruvetaan klikattuun kohtaan luomaan suorakulmiota
+		if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !makingArea)
+		{
+			std::cout << tempRect.getPosition().x << " " << tempRect.getPosition().y << std::endl;
+			makingArea = true;
+			tempRect.setPosition(sf::Vector2f(sf::Mouse::getPosition(window)));
+		}
+		break;
+	case sf::Event::MouseButtonReleased:
+		//jos hiiren vasen vapautetaan luodaan luodun suorakulmion pohjalta käsialue
+		if (!sf::Mouse::isButtonPressed(sf::Mouse::Left) && makingArea)
+		{
+			makingArea = false;
+			makeHandArea(ownIndex, tempRect.getGlobalBounds());		//luodaan käsialue
+
+			//lähetetään luodun alueen tiedot
+			packet.clear();
+			packetID = AREA;
+			float x = tempRect.getGlobalBounds().left;
+			float y = tempRect.getGlobalBounds().top;
+			float w = tempRect.getGlobalBounds().width;
+			float h = tempRect.getGlobalBounds().height;
+			packet << packetID << x << y << w << h;
+			TCPsocket.send(packet);
+
+			tempRect.setSize(sf::Vector2f(0, 0));
+			drawMode = false;										//asetetaan piirtotila pois päältä
+		}
+		break;
+	}
+
+	if (makingArea)													//jos alueen luonti on jo aloitettu päivitetään suorakulmiota hiiren mukaan
+	{
+		tempRect.setSize(sf::Vector2f(sf::Mouse::getPosition(window)) - tempRect.getPosition());
+		std::cout << "Size X: " << tempRect.getSize().x << "Size Y: " << tempRect.getSize().y << std::endl;
+		//tarkistetaan ettei suorakulmion koko ylitä määrättyjä rajoja
+		if (tempRect.getSize().x>300)
+			tempRect.setSize(sf::Vector2f(300, tempRect.getSize().y));
+		if (tempRect.getSize().y>200)
+			tempRect.setSize(sf::Vector2f(tempRect.getSize().x, 200));
+		if (tempRect.getSize().x<-300)
+			tempRect.setSize(sf::Vector2f(-300, tempRect.getSize().y));
+		if (tempRect.getSize().y<-200)
+			tempRect.setSize(sf::Vector2f(tempRect.getSize().x, -200));
+	}
+}
+
+void Client::makeHandArea(int playerIndex, sf::FloatRect floatRect)
+{
+	//luodaan käsialue annetulle pelaajalle, annetun suorakulmion pohjalta
+	sf::RectangleShape rect;
+	rect.setPosition(floatRect.left, floatRect.top);
+	rect.setSize(sf::Vector2f(floatRect.width, floatRect.height));
+	rect.setFillColor(sf::Color::Transparent);
+	rect.setOutlineColor(playerColors[playerIndex]);		//asetetaan alueelle pelaajan värin mukaan reunojen väri
+	rect.setOutlineThickness(2.0f);
+
+	//poistetaan pelaajan edellinen käsialue, jos sellaista löytyy
+	for (int i = 0; i < handAreas.size(); i++)
+	{
+		if (handAreas[i].getOutlineColor() == playerColors[playerIndex])
+		{
+			handAreas.erase(handAreas.begin() + i);
+			break;
+		}
+	}
+	handAreas.push_back(rect);								//lisätään käsialue vektoriin
+}
+
+void Client::checkHandAreas(int cardID)
+{
+	//tarkistetaan onko annettu kortti kokonaan jonkin käsialueen sisällä
+	for (int i = 0; i < cards.size(); i++)
+	{
+		if (cardID == cards[i].getID())		//paikannetaan haluttu kortti vektorista
+		{
+			//otetaan kortin kulmien sijainnit ylös
+			sf::FloatRect floatRect = cards[i]._sprite.getGlobalBounds();
+
+			std::vector<sf::Vector2f> corners;
+			corners.push_back(sf::Vector2f(floatRect.left, floatRect.top));
+			corners.push_back(sf::Vector2f(floatRect.left + floatRect.width, floatRect.top));
+			corners.push_back(sf::Vector2f(floatRect.left, floatRect.top + floatRect.height));
+			corners.push_back(sf::Vector2f(floatRect.left + floatRect.width, floatRect.top + floatRect.height));
+
+			bool inArea;
+
+			//käydään läpi käsialueet ja tehdään tarkistukset jokaiselle kulmalle
+			for (int j = 0; j < handAreas.size(); j++)
+			{
+				inArea = true;
+				for (int k = 0; k < corners.size(); k++)
+				{
+					if (!handAreas[j].getGlobalBounds().contains(corners[k]))
+					{
+						inArea = false;
+						break;
+					}
+				}
+				//jos kortti on jollakin käsialuuella muutetaan sen näkyvyyttä
+				if (inArea)
+				{
+					if (handAreas[j].getOutlineColor() == playerColors[ownIndex])
+						cards[i].inHand(true);			//jos kortti on omalla käsialueella näytetään kortista etupuoli
+					else
+						cards[i].inHand(false);			////jos kortti on toisen käsialueella näytetään kortista takapuoli
+
+					break;
+				}
+				//jos kortti ei ole millään käsialueella palautetaan sen näkyvyys normaaliksi
+				else
+					cards[i].remember();
+			}
+
+			break;
+		}
+	}
+}
+
+void Client::checkInput()
+{
+	sf::Event Event;
+
+	while (window.pollEvent(Event))
+	{
+		//päivitetään hiiren sijainti tietoja
+		posX = sf::Mouse::getPosition(window).x;
+		posY = sf::Mouse::getPosition(window).y;
+
+		//seurataan käyttäjäsyötteitä ja reagoidaan niihin eritavalla eri vaiheissa
+		switch (currentPhase)
+		{
+		case GAME:
+			//peli vaiheessa voidaan olla itse pelissä tai luomassa käsialuetta, reagoidaan sen mukaan kumpi on tilanne
+			if (!drawMode)
+				checkGameInput(Event);
+			else
+				areaTool(Event);
+			break;
+		case DOWNLOADS:
+			checkDownloadInput(Event);
+			break;
+		case CONNECTIONS:
+			checkConnectionInput(Event);
+			break;
+		}
+
+		//käyttäjäsyötteitä joihin reaktio aina sama
+		switch (Event.type)
+		{
+		case sf::Event::Closed:
+			window.close();
+			std::exit(0);
+			break;
+		case sf::Event::KeyPressed:
+			if (Event.key.code == sf::Keyboard::Escape)
+				toolMenu();
+			break;
+		case sf::Event::MouseButtonPressed:
+			if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && menuOn)
+			{
+				buttonStuff();
+			}
+			break;
+		}
+	}
+}
+
+void Client::checkConnectionInput(sf::Event Event)
+{
+	switch (Event.type)
+	{
+	case sf::Event::KeyPressed:
+		if (Event.key.code == sf::Keyboard::Space)
+		{
+			//jos painetaan välilyöntiä siirrytään seuraavaan vaiheeseen sekä lähetetään tästä tieto serverille
+			packet.clear();
+			packetID = CONTINUE;
+			packet << packetID;
+			TCPsocket.send(packet);
+			std::cout << "Sending continue" << std::endl;
+		}
+		break;
+	}
+}
+
+void Client::checkDownloadInput(sf::Event Event)
+{
+	switch (Event.type)
+	{
+	case sf::Event::KeyPressed:
+		if (Event.key.code == sf::Keyboard::Space)
+		{
+			//jos painetaan välilyöntiä siirrytään seuraavaan vaiheeseen ja lähetetään tästä tieto serverille
+			packet.clear();
+			packetID = CONTINUE;
+			packet << packetID;
+			TCPsocket.send(packet);
+			std::cout << "Sending continue" << std::endl;
+		}
+
+		if (Event.key.code == sf::Keyboard::Num1)
+		{
+			//laitetaan tietty kuvatiedosto jakoon, debug tarkoituksessa numeroista näin
+			std::cout << "Sending upload request" << std::endl;
+			fileName = "vesa.png";
+			cardAmount = 10;
+			cardSizeX = 170;
+			cardSizeY = 340;
+
+			if (!assLoad.check(fileName))
+			{
+				assLoad.newDeck(fileName, cardAmount, cardSizeX, cardSizeY);		//lisätään assetloaderin muistiin ja tiedostoon kirjoitettavaksi uuden pakan tiedot
+				std::cout << "Added new image to ass" << std::endl;
+			}
+			makeDeck(fileName, cardAmount, sf::Vector2f(cardSizeX, cardSizeY));		//tehdään jaettavasta kuvasta pakka näytölle
+
+			packet.clear();
+			packetID = REQUEST_UPLOAD;
+			packet << packetID << fileName << cardAmount << cardSizeX << cardSizeY;		//laitetaan pakettiin tiedoston nimi, korttien määrä ja koko
+			TCPsocket.send(packet);													//lähetetään pyyntö uppia kuva serverille
+		}
+		break;
+	}
+}
+
+void Client::checkGameInput(sf::Event Event)
+{
+	switch(Event.type)
+	{
+		case sf::Event::KeyPressed:
+			if(Event.key.code == sf::Keyboard::R)
+			{
+				//jos painetaan ärrää, lähetetään serverille sekoitus pyyntö
+				packet.clear();
+				packetID = SHUFFLE;
+				packet<<packetID;
+				TCPsocket.send(packet);
+			}
+		
+			if(Event.key.code == sf::Keyboard::Space)
+			{
+				//jos painetaan välilyöntiä, käännetään hiiren kohdalla olevaa korttia
+				sf::Int16 cardID = checkClick(sf::Mouse::getPosition(window)), distanceX, distanceY;
+
+				if(cardID != 1337)	//jos hiiri oli kortin kohdalla, sitä käännetään ja tieto käännöstä lähetetään
+				{
+					rotateCard(cardID);
+				
+					distance = sf::Vector2f(posX,posY)-cards[0]._sprite.getPosition();		//päivitetään hiiren sijainti kortin originin suhteen
+					distanceX = distance.x;
+					distanceY = distance.y;
+
+					packet.clear();
+					packetID = ROTATE_CARD;
+					packet<<packetID<<cardID<<distanceX<<distanceY;
+					TCPsocket.send(packet);
+				}
+			}
+			break;
+		case sf::Event::MouseWheelMoved:
+			//jos hiiren rullaa liikutellaan zoomataan kuvaa sen mukaan, kunhan valikko ei ole päällä
+			if(!menuOn)
+				zoomzoom(Event.mouseWheel.delta);
+			break;
+		case sf::Event::MouseButtonPressed:
+		if(clickTimer.getElapsedTime().asMilliseconds()>100) //tarkisteaan että edellisestä hiiren klikkauksesta on kulunut hetki
+		{	
+		if(sf::Mouse::isButtonPressed(sf::Mouse::Left)  && !cardPicked && !menuOn)
+		{
+			//jos hiiren vasenta painetaan, poimitaan hiiren kohdalla oleva kortti
+			sf::Int16 distanceX,distanceY,cardID = checkClick(sf::Mouse::getPosition(window));
+
+			if(cardID != 1337)		//jos hiiri on kortin kohdalla, se poimitaan ja lähetetään tieto poimimisesta
+			{
+			std::cout<<"I picks card";
+			checkCardOwnage(cardID);		//katkaistaan kortin aikaisemmat omistussuhteet, jos sellaisia on
+			pickers.push_back(ownIndex);
+			pickings.push_back(cardID);
+			cardPicked = true;
+			distance = sf::Vector2f(posX,posY)-cards[0]._sprite.getPosition();		//päivitetään hiiren sijainti kortin originin suhteen
+			packet.clear();
+			packetID = PICK_UP_CARD;
+
+			std::cout<<"PosX: "<<posX<<" PosY: "<<posY<<" SpriteX: "<<cards[0]._sprite.getPosition().x<<" SpriteY: "<<cards[0]._sprite.getPosition().y<<std::endl;
+			distanceX = distance.x;
+			distanceY = distance.y;
+			std::cout<<" from X: "<<distanceX<<" Y: "<<distanceY<<std::endl;
+			packet<<packetID<<cardID<<distanceX<<distanceY;
+			TCPsocket.send(packet);
+			}
+		}
+
+			if(sf::Mouse::isButtonPressed(sf::Mouse::Right) && !menuOn)
+			{
+				//jos hiiren oikeaa painetaan, käännetään hiiren kohdalla oleva kortti ympäri
+				sf::Int16 cardID = checkClick(sf::Mouse::getPosition(window));
+
+				if(cardID != 1337)		//jos hiiri on kortin kohdalla, se käännetään ympäri ja tieto kääntämisestä lähetetään
+				{
+					if(!cards[0].getHanded())		//tarkistetaan ettei kortti ole kenenkään kädessä, jolloin kääntäminen voidaan suorittaa
+					{
+						cards[0].swapTexture();
+				
+						packet.clear();
+						packetID = TURN_CARD;
+						packet<<packetID<<cardID;
+						TCPsocket.send(packet);
+					}
+				}
+			}
+			clickTimer.restart();	
+			}
+		break;
+		case sf::Event::MouseButtonReleased:
+		if(!sf::Mouse::isButtonPressed(sf::Mouse::Left))
+		{
+			//jos hiiren vasen vapautetaan, pudotetaan mahdollisesti poimittuna oleva kortti
+			dropCard();
+		}
+		break;
+		}
+}
+
+sf::Int16 Client::checkClick(sf::Vector2i mousepos)
+{
+	sf::Vector2f mouse(mousepos);
+
+	//tarkistetaan onko hiiri minkään kortin kohdalla, jos on niin palautetaan kortin ID ja asetetaan se piirto järjestyksessä päällimmäiseksi
+	for (int i = 0; i < cards.size(); i++)
+	{
+		if (cards[i]._sprite.getGlobalBounds().contains(mouse))
+		{
+			putCardOnTop(cards[i].getID());
+			return cards[0].getID();
+		}
+	}
+
+	sf::Int16 nothing = 1337;
+	return nothing;
+
+}
+
+void Client::putCardOnTop(int cardID)
+{
+	//asetetaan annettu kortti vektorin ensimmäiseksi ja täten piirtojärjestyksessä päällimmäiseksi
+	for (int i = 0; i < cards.size(); i++)
+	{
+		if (cards[i].getID() == cardID)			//etsitään haluttu kortti
+		{
+			CardObject temp = cards[i];				//otetaan kortti talteen väliaikaismuuttujaan
+			cards.erase(cards.begin() + i);			//poistetaan kortti vanhasta paikastaan vektorissa
+			cards.insert(cards.begin(), temp);		//asetetaan kortti vektorin indeksiin 0
+			break;
+		}
+	}
+}
+
+void Client::checkCardOwnage(int cardID)
+{
+	//Tää on hyvä kommentti, joka selkeyttää asioita. Rakkaudella Vesalle
+	//käydään korttien omistussuhteet läpi ja poistetaan ne annetulta kortilta
+	for (int i = 0; i < pickings.size(); i++)
+	{
+		if (pickings[i] == cardID)
+		{
+			pickings.erase(pickings.begin() + i);
+			pickers.erase(pickers.begin() + i);
+			cardPicked = false;
+			break;
+		}
+	}
+}
+
+void Client::dropCard()
+{
+	if (cardPicked)			//tarkistetaan onko korttia edes poimittuna
+	{
+		//katkaistaan omat omistussuhteet korttiin
+		for (int i = 0; i < pickers.size(); i++)
+		{
+			if (pickers[i] == ownIndex)
+			{
+				std::cout << "I drops card" << std::endl;
+				pickers.erase(pickers.begin() + i);
+				pickings.erase(pickings.begin() + i);
+				break;
+			}
+		}
+
+		cardPicked = false;
+		packet.clear();
+		packetID = RELEASE_CARD;
+		sf::Int16 x, y;
+		x = cards[0]._sprite.getPosition().x;
+		y = cards[0]._sprite.getPosition().y;
+
+		packet << packetID << x << y;
+		TCPsocket.send(packet);		//lähetetään minne kortti laskettiin
+
+	}
+}
+
+void Client::moveCard(sf::Int16 playerID, sf::Int16 cardID)
+{
+	for (int i = 0; i < cards.size(); i++)
+	{
+		if (cardID == cards[i].getID())			//paikannetaan haluttu kortti
+		{
+			CardObject tempCard = cards[i];		//otetaan kortti talteen väliaikaismuuttujaan jota käytetään tarkistamaan voiko kortti liikkua
+			tempCard._sprite.setRotation(cards[i]._sprite.getRotation());
+
+			if (playerID != ownIndex)			//toisten pelaajien liikuttamiset
+			{
+				if (playerID > ownIndex)		//toimenpide suoritettava koska vektoreissa ei ole omia tietoja
+					tempCard._sprite.setPosition(shapes[playerID].getPosition() - otherPlayersMouseDist[playerID - 1]);
+				else
+					tempCard._sprite.setPosition(shapes[playerID].getPosition() - otherPlayersMouseDist[playerID]);
+			}
+			else
+			{
+				tempCard._sprite.setPosition(sf::Vector2f(sf::Mouse::getPosition(window)) - distance);		//omat liikuttelut
+			}
+
+			if (checkBoundaries(tempCard._sprite.getGlobalBounds()))			//korttia liikutetaan vain jos se pysyy ikkunan rajojen sisäpuolella
+				cards[i]._sprite.setPosition(tempCard._sprite.getPosition());
+
+			break;
+		}
+	}
+}
+
+void Client::rotateCard(int cardID)
+{
+	for (int i = 0; i < cards.size(); i++)
+	{
+		if (cards[i].getID() == cardID)		//etsitään haluttu kortti
+		{
+			sf::Vector2f diipadaapa;
+			//käännetään korttia nykyisen kulman mukaan
+			int rotation = cards[i]._sprite.getRotation();
+			switch (rotation)
+			{
+			case 0:
+				diipadaapa = sf::Vector2f(cards[i]._sprite.getGlobalBounds().height*0.75f, cards[i]._sprite.getGlobalBounds().width*0.5f);
+				break;
+			case 90:
+				diipadaapa = sf::Vector2f(-cards[i]._sprite.getGlobalBounds().height*0.5f, cards[i]._sprite.getGlobalBounds().width*0.75f);
+				break;
+			case 180:
+				diipadaapa = sf::Vector2f(-cards[i]._sprite.getGlobalBounds().height*0.75f, -cards[i]._sprite.getGlobalBounds().width*0.5f);
+				break;
+			case 270:
+				diipadaapa = sf::Vector2f(cards[i]._sprite.getGlobalBounds().height*0.5f, -cards[i]._sprite.getGlobalBounds().width*0.75f);
+				break;
+			}
+			cards[i]._sprite.rotate(90);
+			cards[i]._sprite.move(diipadaapa);		//korttia liikutetaan hieman käännön yhteydessä jottei se karkaisi hiiren alta
+			break;
+		}
+	}
+	checkHandAreas(cardID);							//tarkistetaan onko kortti käännön jälkeen millään käsialueista
+}
+
+void Client::arrangeDecks()
+{
+	//siirretään pakkoihin kuuluvien korttien sijainnit pakkojen omille paikoille
+	for(int i = 0; i < decks.size();i++)
+	{
+		decks[i].setPosition(sf::Vector2f(i*200,0));
+		if(i>3)
+			decks[i].setPosition(sf::Vector2f(i-3*200,400));
+		else if(i>6)		//ei kellään oo yli kuutta pakkaa
+			std::cout<<"vittu"<<std::endl;
+	}
+}
+
+bool Client::checkBoundaries(sf::FloatRect floatRect)
+{
+	//otetaan annetun suorakulmion kulmien sijainnit talteen
+	std::vector<sf::Vector2f> corners;
+	corners.push_back(sf::Vector2f(floatRect.left, floatRect.top));
+	corners.push_back(sf::Vector2f(floatRect.left + floatRect.width, floatRect.top));
+	corners.push_back(sf::Vector2f(floatRect.left, floatRect.top + floatRect.height));
+	corners.push_back(sf::Vector2f(floatRect.left + floatRect.width, floatRect.top + floatRect.height));
+
+	//tarkistetaan että kaikki kulmat ovat ikkunan rajojen sisäpuolella
+	for (int i = 0; i < corners.size(); i++)
+	{
+		if (!windowRect.contains(corners[i]))	//jos ei, palautetaan false
+			return false;
+	}
+	return true;								//jos juu, palautetaan true
+}
+
+void Client::zoomzoom(int delta)
+{
+	sf::Vector2f viewSize = sf::Vector2f(0.f,0.f);
+
+	//tarkistetaan liikkuiko rulla ylös vai alas
+	if(delta>0)
+	{
+		//lähennetään viewiä
+		if(window.getView().getSize().x == window.getSize().x)
+		{
+			viewSize = sf::Vector2f(window.getSize().x*0.75f,window.getSize().y*0.75f);
+			window.setView(sf::View(sf::Vector2f(posX,posY),viewSize));
+		}
+		else if(window.getView().getSize().x == window.getSize().x*0.75f)
+		{
+			viewSize = sf::Vector2f(window.getSize().x*0.5f,window.getSize().y*0.5f);
+			window.setView(sf::View(sf::Vector2f(posX,posY),viewSize));
+		}
+	}
+	else if(delta<0)
+	{
+		//loitonnetaan viewiä
+		if(window.getView().getSize().x == window.getSize().x*0.75f)
+		{
+			viewSize = sf::Vector2f(window.getSize().x*1.0f,window.getSize().y*1.0f);
+			window.setView(sf::View(sf::Vector2f(window.getSize().x*0.5f,window.getSize().y*0.5f),viewSize));
+		}
+		else if(window.getView().getSize().x == window.getSize().x*0.5f)
+		{
+			viewSize = sf::Vector2f(window.getSize().x*0.75f,window.getSize().y*0.75f);
+			window.setView(sf::View(sf::Vector2f(window.getSize().x*0.5f,window.getSize().y*0.5f),viewSize));
+		}
+	}
+	if(viewSize != sf::Vector2f(0.f,0.f))		//jos view muuttui, korjataan sitä niin ettei reunat mene ikkunan normaalin viewin reunojen yli
+		correctView(viewSize);
+}
+
+void Client::correctView(sf::Vector2f viewSize)
+{
+	//otetaan viewin reunat talteen
+	int viewLeft = posX - window.getView().getSize().x*0.5f;
+	int viewRight = posX + window.getView().getSize().x*0.5f;
+	int viewTop = posY - window.getView().getSize().y*0.5f;
+	int viewBot = posY + window.getView().getSize().y*0.5f;
+	int offsetX=0,offsetY=0;
+
+	//tarkistetaan ovatko reunat yli ikkunan normaalin viewin reunojen
+	if(viewLeft<0)
+	{
+		offsetX = -viewLeft;
+	}
+				
+	if(viewRight>window.getSize().x)
+	{
+		offsetX = viewRight-window.getSize().x;
+		offsetX*=-1;
+	}
+
+	if(viewTop<0)
+	{
+		offsetY = -viewTop;
+	}
+				
+	if(viewBot>window.getSize().y)
+	{
+		offsetY = viewBot-window.getSize().y;
+		offsetY*=-1;
+	}
+
+	window.setView(sf::View(sf::Vector2f(posX+offsetX,posY+offsetY),viewSize));		//asetetaan view niin etteivät reunat ylitä ikkunan normaalin viewin reunoja
+}
+
+void Client::draw()
+{
+	window.clear(sf::Color(50,135,50,255));
+
+	for(int i = 0; i < handAreas.size();i++)
+	{
+		window.draw(handAreas[i]);
+	}
+
+	for(int i = cards.size()-1; i >= 0;i--)
+	{
+		cards[i].draw(window);
+	}
+	for(int i = 0; i < shapes.size(); i++)
+	{
+		window.draw(shapes[i]);
+	}
+	
+	tools.draw(window);
+	
+	if(makingArea)
+		window.draw(tempRect);
+
+	window.display();
+}
+
+void Client::run()
+{
+	while (true)
+	{
+		deltaTime_time = deltaClock.restart();
+		deltaTime = deltaTime_time.asMilliseconds();
+
+		checkInput();	//seurataan käyttäjäsyötteitä
+
+		//ajetaan eri funktio nykyisen vaiheen mukaan
+		switch (currentPhase)
+		{
+		case CONNECTIONS:
+			connectionPhase();
+			break;
+		case DOWNLOADS:
+			downloadPhase();
+			break;
+		case GAME:
+			gamePhase();
+			break;
+		}
+
+		draw();		//piirretään shittii
+	}
+}
+
+Client::~Client(void)
+{
+
+}
