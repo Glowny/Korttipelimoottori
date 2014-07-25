@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <sstream>
+#include "CardInfo.h"
 #include "SFML\Graphics.hpp"
 #include "SFML\Window.hpp"
 #include "SFML\System.hpp"
@@ -18,6 +20,8 @@ public:
 	void setGridAmount(sf::Vector2i amount);
 	void setGridSize(sf::Vector2f size);
 	void buttonActions();
+	bool checkCoords(sf::Vector2f coords);
+	int getIndexCoords();
 
 private:
 	std::vector<int> cardAmounts;
@@ -31,7 +35,11 @@ private:
 	std::vector<sf::VertexArray> grid;
 	bool mousePressed;
 	sf::Font font;
-
+	sf::Text text;
+	std::string input;
+	bool inputOn;
+	int inputTarget;
+	int oldInputSize;
 
 };
 
