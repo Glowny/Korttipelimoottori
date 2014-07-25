@@ -48,7 +48,7 @@ private:
 	void checkDeckMenu();
 	void checkHandAreas(int cardID);
 	void makeHandArea(int playerIndex, sf::FloatRect floatRect);
-	bool checkBoundaries(sf::FloatRect floatRect);
+	sf::Vector2f checkBoundaries(sf::FloatRect floatRect);
 	void smootheMouse(int index, sf::Vector2f oldpos,sf::Vector2f newpos);
 	void moveCard(sf::Int16 playerID, sf::Int16 cardID);
 	void checkGameInput(sf::Event Event);
@@ -79,7 +79,7 @@ private:
 	sf::FloatRect windowRect;
 	sf::Clock clickTimer;
 
-	bool toolMenuOn,makingArea,cardPicked,drawMode,deleteMode,deckMenuOn;
+	bool toolMenuOn,makingArea,cardPicked,drawMode,deleteMode,uploadMode,deckMenuOn;
 	unsigned short serverPort;
 	float deltaTime;
 

@@ -8,6 +8,7 @@ ButtonObject::ButtonObject(sf::Font font,std::string string)
 	_text.setFont(*_font);
 	_text.setString(string);
 	_text.setColor(sf::Color::Black);
+	flashTime = 0.1f;
 
 
 
@@ -21,6 +22,8 @@ ButtonObject::ButtonObject(sf::Font font,std::string string, sf::Texture texture
 	_text.setString(string);
 	_sprite.setTexture(texture);
 	_text.setColor(sf::Color::Black);
+	flashTime = 0.1f;
+
 }
 
 ButtonObject::~ButtonObject(void)
@@ -32,7 +35,12 @@ void ButtonObject::draw(sf::RenderWindow &window)
 
 	if(_sprite.getTexture() != NULL)
 		window.draw(_sprite);
+	
 	else
+
+		if(flashTimer.getElapsedTime().asSeconds()>flashTime && _shape.getFillColor()!=sf::Color::White)
+			_shape.setFillColor(sf::Color::White);
+
 		window.draw(_shape);
 
 		window.draw(_text);
@@ -52,6 +60,12 @@ void ButtonObject::setPosition(sf::Vector2f position)
 	_shape.setPosition(position);
 	_text.setPosition(position.x + _shape.getSize().x*0.5f, position.y + _shape.getSize().y*0.5f);
 	}
+}
+
+void ButtonObject::flash()
+{
+	flashTimer.restart();
+	_shape.setFillColor(sf::Color(200,200,200,255));
 }
 
 void ButtonObject::adapt()

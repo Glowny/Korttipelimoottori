@@ -28,6 +28,7 @@ int DeckMenu::checkButtons(sf::Vector2i mousepos)
 	{
 		if(buttons[i].getGlobalBounds().contains(sf::Vector2f(mousepos)))
 		{
+			buttons[i].flash();
 			pushed = i;
 			break;
 		}

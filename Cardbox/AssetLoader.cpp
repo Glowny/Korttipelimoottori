@@ -76,18 +76,23 @@ sf::Texture* AssetLoader::getTexture(std::string s)
 void AssetLoader::newDeck(std::string s,int amount,int sizex,int sizey)
 {
 	sf::Texture *temp = new sf::Texture;
-	temp->loadFromFile(s);
-
+	if(temp->loadFromFile(s))
+	{
 	std::map<std::string,sf::Texture*>::iterator it;
 	it = textureMap.begin();
 	textureMap.insert(it,std::make_pair(s,temp));
-	deckVector.push_back(Deck(s,amount,sizex,sizey));
 
+
+	deckVector.push_back(Deck(s,amount,sizex,sizey));
 	writeAssetList();
+	}
+	else
+		std::cout<<"Could not make a deck, picture not found"<<std::endl;
 }
 
 void AssetLoader::eraseDeck(std::string s, int amount, int sizex, int sizey)
 {
+
 	for(int i = 0; i < deckVector.size();i++)
 	{		
 		if(deckVector[i].getName() == s && deckVector[i].getCardAmount() == amount
@@ -95,7 +100,7 @@ void AssetLoader::eraseDeck(std::string s, int amount, int sizex, int sizey)
 		{
 			deckVector.erase(deckVector.begin()+i);
 				break;
-		}	
+		}
 	}
 	writeAssetList();
 }

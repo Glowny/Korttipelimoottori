@@ -224,8 +224,6 @@ void StartScreen::askWhatYouWannaDo()
 		draw();
 		}
 
-
-
 }
 
 void StartScreen::run()

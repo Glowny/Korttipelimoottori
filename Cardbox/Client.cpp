@@ -8,7 +8,7 @@ Client::Client(AssetLoader *al) :assLoad(al), window(sf::RenderWindow(sf::VideoM
 	
 	toolMenuOn = false;
 
-	windowRect = sf::FloatRect(-1.f,-1.f,window.getSize().x+2.f, window.getSize().y+2.f);
+	windowRect = sf::FloatRect(1.f,1.f,window.getSize().x-1.0f, window.getSize().y-1.0f);
 
 	currentPhase = CONNECTIONS;
 	
@@ -18,6 +18,7 @@ Client::Client(AssetLoader *al) :assLoad(al), window(sf::RenderWindow(sf::VideoM
 	makingArea = false;
 	deckMenuOn = false;
 	deleteMode = false;
+	uploadMode = false;
 
 	//dView = new DialogueView();
 }
@@ -80,7 +81,6 @@ void Client::connectionPhase()
 		case CONTINUE:
 			currentPhase = DOWNLOADS;
 			std::cout<<"Client going to downloadsPhase"<<std::endl;
-			toolMenu();
 			break;
 		case START:
 			handleStartPacket();
@@ -355,7 +355,7 @@ void Client::initPlayers()
 			otherPlayersMousePos.push_back(sf::Vector2f());
 			otherPlayersMouseDist.push_back(sf::Vector2f());
 			}
-			shapes.push_back(sf::RectangleShape(sf::Vector2f(10,10)));
+			shapes.push_back(sf::RectangleShape(sf::Vector2f(5,5)));
 			shapes[i].setFillColor(playerColors[i]);
 		}
 }
@@ -409,7 +409,7 @@ void Client::checkGameInput(sf::Event Event)
 
 			if(cardID != 1337)
 			{
-			std::cout<<"I picks card";
+			//std::cout<<"Me pick card";
 			cardPicked = true;
 			checkCardOwnage(cardID);
 			pickers.push_back(ownIndex);
@@ -508,6 +508,14 @@ void Client::checkInput()
 		
 		posX = sf::Mouse::getPosition(window).x;
 		posY = sf::Mouse::getPosition(window).y;
+
+		//jos vahingossa duunaa jotain typerää ikkunan kanssa
+		if(sf::Vector2f(window.getSize()) != window.getDefaultView().getSize())
+			{ 
+				window.setSize(sf::Vector2u(window.getDefaultView().getSize()));
+			
+			}
+		
 		
 		switch(currentPhase)
 		{
@@ -519,9 +527,11 @@ void Client::checkInput()
 				areaTool(Event);
 
 			break;
+
+
 		case DOWNLOADS:
 			checkDownloadInput(Event);
-				if(deckMenuOn)
+				//if(deckMenuOn)
 
 			break;
 		case CONNECTIONS:
@@ -604,20 +614,32 @@ void Client::checkDeckMenu()
 	case 1:
 		std::cout<<"button 2"<<std::endl;
 
-		deckMenu.upDecks();
+		uploadMode = !uploadMode;
+
+		if(!deleteMode)
+			deckMenu.upDecks();
+
+		if(deleteMode)
+			deleteMode = false;
 
 		break;
 	case 2:
 		std::cout<<"button 3"<<std::endl;
-		deckMenu.upDecks();
+
 		deleteMode = !deleteMode;
+
+		if(!uploadMode)
+			deckMenu.upDecks();
+		if(uploadMode)
+			uploadMode = false;
+	
 		break;
 	case -1:
 		break;
 	
 	default:
-//tähän mode checkings
-		if(!deleteMode)
+
+		if(uploadMode)
 		{
 		//std::cout<<assLoad->getDecks().at(option-3).getName()<<std::endl;
 		fileName = assLoad->getDecks().at(option-3).getName();
@@ -628,16 +650,15 @@ void Client::checkDeckMenu()
 		if(!assLoad->check(fileName))
 			{
 				assLoad->newDeck(fileName,cardAmount,cardSizeX,cardSizeY);
-				std::cout<<"Added new image to ass"<<std::endl;
+				std::cout<<"Added new image to assets"<<std::endl;
 			}
 			makeDeck(fileName,cardAmount,sf::Vector2f(cardSizeX,cardSizeY));
-
 			packet.clear();
 			packetID = REQUEST_UPLOAD;
 			packet<<packetID<<fileName<<cardAmount<<cardSizeX<<cardSizeY;
 			TCPsocket.send(packet);
 		}
-		else
+		else if(deleteMode)
 		{
 		fileName = assLoad->getDecks().at(option-3).getName();
 		cardAmount = assLoad->getDecks().at(option-3).getCardAmount();
@@ -926,8 +947,9 @@ void Client::moveCard(sf::Int16 playerID,sf::Int16 cardID)
 				tempCard._sprite.setPosition(sf::Vector2f(sf::Mouse::getPosition(window))-distance);
 			}
 		
-			if(checkBoundaries(tempCard._sprite.getGlobalBounds()))
-				cards[i]._sprite.setPosition(tempCard._sprite.getPosition());
+			cards[i]._sprite.setPosition(checkBoundaries(tempCard._sprite.getGlobalBounds()));
+
+			//cards[i]._sprite.setPosition(tempCard._sprite.getPosition());
 
 			break;
 		}
@@ -935,20 +957,19 @@ void Client::moveCard(sf::Int16 playerID,sf::Int16 cardID)
 
 }
 
-bool Client::checkBoundaries(sf::FloatRect floatRect)
+sf::Vector2f Client::checkBoundaries(sf::FloatRect floatRect)
 {
-	std::vector<sf::Vector2f> corners;
-	corners.push_back(sf::Vector2f(floatRect.left,floatRect.top));
-	corners.push_back(sf::Vector2f(floatRect.left+floatRect.width, floatRect.top));
-	corners.push_back(sf::Vector2f(floatRect.left, floatRect.top+floatRect.height));
-	corners.push_back(sf::Vector2f(floatRect.left+floatRect.width, floatRect.top+floatRect.height));
-	
-	for(int i = 0; i < corners.size();i++)
-	{
-		if(!windowRect.contains(corners[i]))
-			return false;
-	}
-	return true;
+
+		if((floatRect.left<windowRect.left))
+			floatRect.left = windowRect.left;
+		if(floatRect.top<windowRect.top)
+			floatRect.top=windowRect.top;
+		if((floatRect.top+floatRect.height)>(windowRect.top+windowRect.height))
+			floatRect.top=(windowRect.top+windowRect.height-floatRect.height);
+		if((floatRect.left+floatRect.width)>(windowRect.left+windowRect.width))
+			floatRect.left=(windowRect.left+windowRect.width-floatRect.width);
+
+	return sf::Vector2f(floatRect.left,floatRect.top);
 
 }
 

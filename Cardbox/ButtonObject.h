@@ -13,8 +13,11 @@ public:
 	void setPosition(sf::Vector2f position);
 	void setSize(sf::Vector2f size);
 	sf::FloatRect getGlobalBounds();
+	void flash();
 	void adapt();
 private:
+	float flashTime;
+	sf::Clock flashTimer;
 	sf::Text _text;
 	sf::RectangleShape _shape;
 	sf::Sprite _sprite;

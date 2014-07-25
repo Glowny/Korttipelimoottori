@@ -42,6 +42,7 @@ int ToolMenu::checkButtons(sf::Vector2i mousePos)
 	{
 		if(buttons[i].getGlobalBounds().contains(sf::Vector2f(mousePos)))
 		{
+			buttons[i].flash();
 			pushed = i;
 			break;
 		}
