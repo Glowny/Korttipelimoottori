@@ -19,7 +19,7 @@ Editor::Editor(void):window(sf::RenderWindow(sf::VideoMode(1600,1100), "Editor")
 	text.setColor(sf::Color::Black);
 	inputOn = 0;
 	oldInputSize = input.size();
-
+	drawMultiplier = 1;
 }
 
 
@@ -34,7 +34,7 @@ void Editor::run()
 		gridAmount.y = 9;
 		gridSize.x = 200;
 		gridSize.y = 200;
-		std::string filename = "ValtioValta";
+		name = "ValtioValta";
 		bool keyPressed = 0;
 		mousePressed = 0;
 		//temporary//
@@ -55,30 +55,68 @@ void Editor::run()
 			{
 				if (keyPressed == 0 )
 				{
-					setImage(filename);
+					setImage(name);
 					setGrid();
 					int endVal = gridAmount.x*gridAmount.y-cardAmounts.size();
-					for (int i = 0; i <endVal/2; i++)
+					for (int i = 0; i <endVal; i++)
 						{
 							cardAmounts.push_back(0);
-							cardAmounts.push_back(1);
 						}
 					keyPressed = 1;
 				}
 			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+			{
+				if(keyPressed == 0)
+				{
+					save();
+				}
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::L))
+			{
+				if(keyPressed == 0)
+				{
+					load();
+				}
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Add))
+			{
+				if(keyPressed == 0)
+				{
+					drawMultiplier+= 0.01;
+					resizeImage(drawMultiplier);
+					setGrid();
+				}
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num0))
+			{
+				if(keyPressed == 0)
+				{
+					if (drawMultiplier > 0)
+					{
+						drawMultiplier-= 0.01;
+						resizeImage(drawMultiplier);
+						setGrid();
+					}
+				}
+			}
 			else
 			keyPressed = 0;
+
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
 				bool hits = 0;
 				for (int i = 0; i < buttons.size(); i++)
 				{
-					if (buttons[i].getGlobalBounds().contains(mousePos))
+					if(mousePressed == 0)
 					{
-						input.clear();
-						inputOn = 1;
-						inputTarget = i;
-						hits = 1;
+						if (buttons[i].getGlobalBounds().contains(mousePos))
+						{
+							input.clear();
+							inputOn = 1;
+							inputTarget = i;
+							hits = 1;
+						}
 					}
 				}
 				if (!hits)
@@ -86,11 +124,22 @@ void Editor::run()
 					inputOn = 0;
 					input.clear();
 				}
-				if (checkCoords(mousePos) && cardAmounts.size() != 0)
+				if (checkCoords() && cardAmounts.size() != 0)
 				{
 					cardAmounts[getIndexCoords()]++;
 				}
+				mousePressed = 1;
 			}
+			else if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
+			{
+				if (checkCoords() && cardAmounts.size() != 0)
+				{
+					cardAmounts[getIndexCoords()]--;
+				}
+				mousePressed = 1;
+			}
+			else
+				mousePressed = 0;
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Return))
 			{
 				inputOn = 0;
@@ -148,7 +197,8 @@ void Editor::setImage(std::string fileName)
 }
 void Editor::resizeImage(float multiplier)
 {
-	picture.setSize(picture.getSize()*multiplier);
+	picture.setScale(multiplier,multiplier);
+
 }
 void Editor::draw()
 {
@@ -168,8 +218,13 @@ void Editor::draw()
 	sf::Text newText = text;
 	newText.setColor(sf::Color(100,111,30));
 	newText.setCharacterSize(30);
+
+	sf::Vector2f drawGridSize = gridSize;
+	drawGridSize.x = drawGridSize.x*drawMultiplier;
+	drawGridSize.y = drawGridSize.y*drawMultiplier;
+
 	int paska=0;
-	if (cardAmounts.size() != 0)
+	while (cardAmounts.size() > paska)
 	{
 		for (int j = 0; j < gridAmount.y; j++)
 		{
@@ -177,13 +232,14 @@ void Editor::draw()
 			for (int i = 0; i < gridAmount.x; i++)
 			{
 				std::ostringstream convert;
-				newText.setPosition(picture.getPosition().x+gridSize.x*i,picture.getPosition().y+gridSize.y*j);
+				newText.setPosition(picture.getPosition().x+drawGridSize.x*i,picture.getPosition().y+drawGridSize.y*j);
 				convert << cardAmounts[paska];
 				newText.setString(convert.str());
 				window.draw(newText);
 				paska++;
 			}
 		}
+		break;
 	}		
 	
 
@@ -263,14 +319,17 @@ void Editor::draw()
 void Editor::setGrid()
 {
 	sf::Vector2f imagePos = picture.getPosition();
+	sf::Vector2f drawGridSize = gridSize;
+	drawGridSize.x = drawGridSize.x*drawMultiplier;
+	drawGridSize.y = drawGridSize.y*drawMultiplier;
 	grid.clear();
 	for (int i = 0; i <= gridAmount.x; i++)
 	{
 		sf::VertexArray tempVA(sf::Lines, 2);
 		tempVA[0].color = sf::Color::Green;
 		tempVA[1].color = sf::Color::Green;
-		tempVA[0].position = sf::Vector2f(imagePos.x+gridSize.x*i,imagePos.y);	//alkupiste
-		tempVA[1].position = sf::Vector2f(imagePos.x+gridSize.x*i, imagePos.y+gridAmount.y*gridSize.y);	// loppupiste
+		tempVA[0].position = sf::Vector2f(imagePos.x+drawGridSize.x*i,imagePos.y);	//alkupiste
+		tempVA[1].position = sf::Vector2f(imagePos.x+drawGridSize.x*i, imagePos.y+gridAmount.y*drawGridSize.y);	// loppupiste
 		grid.push_back(tempVA);
 	}
 	for (int j = 0; j <= gridAmount.y; j++)
@@ -278,8 +337,8 @@ void Editor::setGrid()
 		sf::VertexArray tempVA(sf::Lines, 2);
 		tempVA[0].color = sf::Color::Green;
 		tempVA[1].color = sf::Color::Green;
-		tempVA[0].position = sf::Vector2f(imagePos.x,imagePos.y+gridSize.y*j);	//alkupiste
-		tempVA[1].position = sf::Vector2f(imagePos.x+gridAmount.x*gridSize.x, imagePos.y+gridSize.y*j);	// loppupiste
+		tempVA[0].position = sf::Vector2f(imagePos.x,imagePos.y+drawGridSize.y*j);	//alkupiste
+		tempVA[1].position = sf::Vector2f(imagePos.x+gridAmount.x*drawGridSize.x, imagePos.y+drawGridSize.y*j);	// loppupiste
 		grid.push_back(tempVA);
 	}
 }
@@ -293,14 +352,47 @@ void Editor::setGridSize(sf::Vector2f size)
 }
 void Editor::save()
 {
-	
-}
-
-bool Editor::checkCoords(sf::Vector2f coords)
-{
-	if ( coords.x < gridAmount.x*gridSize.x && coords.y < gridAmount.y*gridSize.y)
+	int size = gridAmount.x*gridAmount.y;
+	int* cards;
+	cards = new int[size];
+	for (int i = 0; i <size;i++)
 	{
-		if ( coords.x > picture.getPosition().x && coords.y > picture.getPosition().y)
+		cards[i] = cardAmounts[i];
+		std::cout << cards[i] << std::endl;
+	}
+	CardInfo cardInfo(name, gridSize.x,gridSize.y,gridAmount.x*gridAmount.y, cards);
+	cardInfo.save();
+}
+void Editor::setCardAmounts(int* a, int size)
+{
+	cardAmounts.clear();
+	int* tempArray = new int[size];
+	tempArray = a;
+	for (int i = 0; i < size; i++)
+	{
+		cardAmounts.push_back(tempArray[i]);	// saattaa olla virhe.
+	}
+	setGrid();
+}
+void Editor::load()
+{
+	setImage(name);
+	CardInfo cardInfo(name);
+	setCardAmounts(cardInfo.getCards(),cardInfo.getCardAmount());
+	int endVal = gridAmount.x*gridAmount.y-cardAmounts.size();
+	for (int i = 0; i <endVal; i++)
+		{
+			cardAmounts.push_back(0);
+		}
+	setGrid();
+
+}
+bool Editor::checkCoords()
+{
+	sf::Vector2f thisMousePos = mousePos-picture.getPosition();
+	if ( thisMousePos.x < gridAmount.x*gridSize.x && thisMousePos.y < gridAmount.y*gridSize.y)
+	{
+		if ( mousePos.x > picture.getPosition().x && mousePos.y > picture.getPosition().y)
 		{
 			return true;	
 		}
@@ -313,16 +405,18 @@ int Editor::getIndexCoords()
 	float x = thisMousePos.x/gridSize.x;
 	float y = thisMousePos.y/gridSize.y;
 	int returnValue;
-	int paska=0;
+	int paska=-1;
+	std::cout << x << ", " << y << std::endl;
 	if (cardAmounts.size() != 0)
 	{
-		for (int j = 0; j+1 < y; j++)
+		for (int j = 0; j < y; j++)
 		{
-			for (int i = 0; i< x; i++)
+			paska = gridAmount.x * j;
+		}
+		for (int i = 1; i< x; i++)
 			{
 				paska++;
 			}
-		}
 		returnValue = paska;
 	}		
 

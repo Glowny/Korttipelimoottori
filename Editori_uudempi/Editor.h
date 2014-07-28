@@ -13,17 +13,21 @@ public:
 	~Editor(void);
 	void run();
 	void save();
-	void resizeImage(float newSize);
+	void load();
+	void resizeImage(float multiplier);
 	void setImage(std::string fileName);
 	void draw();
+	void setCardAmounts(int* a, int size);
 	void setGrid();
 	void setGridAmount(sf::Vector2i amount);
 	void setGridSize(sf::Vector2f size);
 	void buttonActions();
-	bool checkCoords(sf::Vector2f coords);
+	bool checkCoords();
 	int getIndexCoords();
 
 private:
+	float drawMultiplier;
+	std::string name;
 	std::vector<int> cardAmounts;
 	sf::RenderWindow window;
 	sf::Vector2f mousePos;
@@ -40,6 +44,7 @@ private:
 	bool inputOn;
 	int inputTarget;
 	int oldInputSize;
+	
 
 };
 

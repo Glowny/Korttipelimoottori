@@ -10,6 +10,7 @@ public:
 	~CardInfo(void);
 	void save();
 	int getCardAmount();
+	void print();
 	int* getCards();
 	std::string getName();
 private:
@@ -17,6 +18,6 @@ private:
 	int _cardWidth;
 	int _cardHeight;
 	int _cardAmount;
-	int _cards[];
+	int* _cards;
 };
 
